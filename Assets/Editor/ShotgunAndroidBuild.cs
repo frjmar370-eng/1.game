@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
@@ -60,7 +61,7 @@ public static class ShotgunAndroidBuild
         PlayerSettings.applicationIdentifier = "com.frjmar.shotgun3d";
 
         // Android device profile: landscape FPS controls, ARM64, IL2CPP.
-        PlayerSettings.defaultScreenOrientation = ScreenOrientation.LandscapeLeft;
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
         PlayerSettings.allowedAutorotateToLandscapeLeft = true;
