@@ -1,0 +1,32 @@
+name: Build Shotgun 3D APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Unity project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+        with:
+          projectPath: .
+          unityVersion: 2022.3.62f2
+          targetPlatform: Android
+          buildMethod: ShotgunAndroidBuild.BuildAPK
+          customParameters: -nographics
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shotgun3D-APK
+          path: Builds/Shotgun3D.apk
+          if-no-files-found: error
