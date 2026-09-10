@@ -11,24 +11,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Unity Hub is not part of the Ubuntu runner repositories by default.
-      # Install it from Unity's official APT repository before Buildalon uses it.
-      - name: Install Unity Hub
+      # Unity Hub is a GUI application. Buildalon's Unity setup probes Hub
+      # through its CLI, so the runner needs a virtual X display even in CI.
+      - name: Install Unity Hub and start virtual display
         shell: bash
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y curl gnupg ca-certificates desktop-file-utils
+          sudo apt-get install -y curl gnupg ca-certificates desktop-file-utils xvfb
           sudo install -d -m 0755 /etc/apt/keyrings
           curl -fsSL https://hub.unity3d.com/linux/keys/public | sudo gpg --dearmor --yes -o /etc/apt/keyrings/unityhub.gpg
           echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/unityhub.gpg] https://hub.unity3d.com/linux/repos/deb stable main" | sudo tee /etc/apt/sources.list.d/unityhub.list >/dev/null
           sudo apt-get update
           sudo apt-get install -y unityhub
+
+          sudo Xvfb :99 -screen 0 1280x720x24 -nolisten tcp >/tmp/xvfb.log 2>&1 &
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          sleep 2
+
           command -v unityhub
           sudo mkdir -p /opt/unityhub
           sudo ln -sfn "$(command -v unityhub)" /opt/unityhub/unityhub
           test -x /opt/unityhub/unityhub
-          /opt/unityhub/unityhub --version || true
+          DISPLAY=:99 /opt/unityhub/unityhub --version
 
       - name: Setup Unity 2022.3 + Android
         uses: buildalon/unity-setup@v2
