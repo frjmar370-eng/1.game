@@ -7,7 +7,7 @@ public class GameFlow : MonoBehaviour
     public static GameFlow Instance { get; private set; }
     public Text roundText, messageText;
     public float roundDuration=60f;
-    float timeLeft; int round=1; int aliveTargets; bool paused,transitioning; float nextRoundAt;
+    float timeLeft; int round=1; int aliveTargets; bool paused,transitioning,started; float nextRoundAt;
     GameObject enemyPrefab;
 
     void Awake(){
@@ -15,11 +15,20 @@ public class GameFlow : MonoBehaviour
         Instance=this;enemyPrefab=ArtAssetResolver.Enemy();
     }
 
-    void Start(){
+    public void BeginGame(){
+        if(started)return;
+        started=true;
         EnsureSystems();
-        ArenaBuilder3D arena=FindObjectOfType<ArenaBuilder3D>();if(arena==null)arena=gameObject.AddComponent<ArenaBuilder3D>();arena.Build();
-        timeLeft=roundDuration;DifficultySystem.Instance.SetWave(round);
+        ArenaBuilder3D arena=FindObjectOfType<ArenaBuilder3D>();
+        if(arena==null)arena=gameObject.AddComponent<ArenaBuilder3D>();
+        arena.Build();
+        timeLeft=roundDuration;
+        if(DifficultySystem.Instance)DifficultySystem.Instance.SetWave(round);
         SpawnRoundTargets(6);SpawnPickups(4);Invoke(nameof(RefreshEnemyPresentation),.2f);UpdateUI();
+    }
+
+    void Start(){
+        // SceneBootstrap explicitly starts the gameplay. Keeping Start empty prevents duplicate spawning.
     }
 
     void EnsureSystems(){
@@ -34,7 +43,7 @@ public class GameFlow : MonoBehaviour
     }
 
     void Update(){
-        if(paused)return;
+        if(!started||paused)return;
         if(transitioning){if(Time.time>=nextRoundAt){transitioning=false;EndRound();}UpdateUI();return;}
         ShotgunGame player=FindObjectOfType<ShotgunGame>();if(player&&player.IsGameOver)return;
         timeLeft-=Time.deltaTime;if(timeLeft<=0f||aliveTargets<=0)BeginNextRound();UpdateUI();
@@ -46,7 +55,7 @@ public class GameFlow : MonoBehaviour
     public void RestartGame(){Time.timeScale=1f;SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);}
 
     void EndRound(){
-        round++;timeLeft=Mathf.Max(30f,roundDuration-round*1.5f);DifficultySystem.Instance.SetWave(round);
+        round++;timeLeft=Mathf.Max(30f,roundDuration-round*1.5f);if(DifficultySystem.Instance)DifficultySystem.Instance.SetWave(round);
         SpawnRoundTargets(Mathf.Min(24,4+round*2));SpawnPickups(3+round%3);
         if(round%5==0&&BossSystem.Instance!=null)BossSystem.Instance.SpawnBoss(new Vector3(0,0,12),round);
         if(messageText)messageText.text=round%5==0?"BOSS WAVE":"ROUND "+round;if(AudioManager.Instance)AudioManager.Instance.Click();
