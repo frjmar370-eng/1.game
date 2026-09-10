@@ -37,6 +37,7 @@ public class GameFlow : MonoBehaviour
     void EnsureSystems(){
         if(WeaponSystem.Instance==null)gameObject.AddComponent<WeaponSystem>();
         if(MissionSystem.Instance==null)gameObject.AddComponent<MissionSystem>();
+        if(ObjectiveSystem.Instance==null)gameObject.AddComponent<ObjectiveSystem>();
         if(AudioManager.Instance==null)gameObject.AddComponent<AudioManager>();
         if(DifficultySystem.Instance==null)gameObject.AddComponent<DifficultySystem>();
         if(BossSystem.Instance==null)gameObject.AddComponent<BossSystem>();
