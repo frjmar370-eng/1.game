@@ -6,8 +6,8 @@ public class GameFlow : MonoBehaviour
 {
     public static GameFlow Instance { get; private set; }
     public Text roundText, messageText;
-    public float roundDuration = 60f;
-    float timeLeft; int round = 1; int aliveTargets; bool paused, transitioning; float nextRoundAt;
+    public float roundDuration=60f;
+    float timeLeft; int round=1; int aliveTargets; bool paused,transitioning; float nextRoundAt;
     GameObject enemyPrefab;
 
     void Awake(){
@@ -16,8 +16,10 @@ public class GameFlow : MonoBehaviour
     }
 
     void Start(){
-        EnsureSystems();timeLeft=roundDuration;aliveTargets=FindObjectsOfType<TargetDummy>().Length;
-        DifficultySystem.Instance.SetWave(round);SpawnPickups(4);Invoke(nameof(RefreshEnemyPresentation),.2f);UpdateUI();
+        EnsureSystems();
+        ArenaBuilder3D arena=FindObjectOfType<ArenaBuilder3D>();if(arena==null)arena=gameObject.AddComponent<ArenaBuilder3D>();arena.Build();
+        timeLeft=roundDuration;DifficultySystem.Instance.SetWave(round);
+        SpawnRoundTargets(6);SpawnPickups(4);Invoke(nameof(RefreshEnemyPresentation),.2f);UpdateUI();
     }
 
     void EnsureSystems(){
@@ -26,7 +28,6 @@ public class GameFlow : MonoBehaviour
         if(AudioManager.Instance==null)gameObject.AddComponent<AudioManager>();
         if(DifficultySystem.Instance==null)gameObject.AddComponent<DifficultySystem>();
         if(BossSystem.Instance==null)gameObject.AddComponent<BossSystem>();
-        if(!FindObjectOfType<ArenaBuilder3D>())gameObject.AddComponent<ArenaBuilder3D>();
         if(!FindObjectOfType<CombatPresentation3D>())gameObject.AddComponent<CombatPresentation3D>();
         if(!FindObjectOfType<AndroidGamePolish>())gameObject.AddComponent<AndroidGamePolish>();
         if(!FindObjectOfType<WeaponVisual3D>())gameObject.AddComponent<WeaponVisual3D>();
@@ -57,7 +58,8 @@ public class GameFlow : MonoBehaviour
             Vector3 pos=new Vector3(Random.Range(-14f,14f),0,Random.Range(1f,17f));
             GameObject t=enemyPrefab?Instantiate(enemyPrefab,pos,Quaternion.identity):GameObject.CreatePrimitive(PrimitiveType.Capsule);
             t.name="Enemy_R"+round+"_"+i;if(!enemyPrefab){t.transform.position=new Vector3(pos.x,1.1f,pos.z);t.transform.localScale=Vector3.one*1.1f;}
-            if(t.GetComponent<Collider>()==null)t.AddComponent<CapsuleCollider>();TargetDummy d=t.GetComponent<TargetDummy>();if(d==null)d=t.AddComponent<TargetDummy>();
+            if(t.GetComponent<Collider>()==null)t.AddComponent<CapsuleCollider>();
+            TargetDummy d=t.GetComponent<TargetDummy>();if(d==null)d=t.AddComponent<TargetDummy>();
             d.health=Mathf.RoundToInt((2+Mathf.Min(6,round/2))*healthMul);d.moveSpeed=(1.2f+round*.08f)*speedMul;d.damageToPlayer=Mathf.RoundToInt((8+Mathf.Min(14,round))*damageMul);d.attackInterval=Mathf.Max(.65f,2.5f-round*.08f)/speedMul;d.chaseDistance=Mathf.Min(32f,18f+round*.5f);
             EnemyVariants v=t.GetComponent<EnemyVariants>();if(v==null)v=t.AddComponent<EnemyVariants>();int roll=(i+round)%10;v.type=roll<6?EnemyType.Grunt:(roll<9?EnemyType.Runner:EnemyType.Tank);
             if(!t.GetComponent<EnemyVisualPolish>())t.AddComponent<EnemyVisualPolish>();CombatPresentation3D cp=FindObjectOfType<CombatPresentation3D>();if(cp)cp.Attach(d);
