@@ -15,7 +15,7 @@ public static class ShotgunAndroidBuild
         EnsureProjectSetup();
 
         if (!File.Exists(ScenePath))
-            throw new BuildFailedException("Required scene was not created: " + ScenePath);
+            throw new BuildFailedException("Required scene is missing: " + ScenePath);
 
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
         EditorUserBuildSettings.buildAppBundle = false;
@@ -58,11 +58,18 @@ public static class ShotgunAndroidBuild
         PlayerSettings.productName = "Shotgun 3D";
         PlayerSettings.companyName = "Frjmar";
         PlayerSettings.applicationIdentifier = "com.frjmar.shotgun3d";
+
+        // Android device profile: landscape FPS controls, ARM64, IL2CPP.
         PlayerSettings.defaultScreenOrientation = ScreenOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
         PlayerSettings.allowedAutorotateToLandscapeLeft = true;
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
+        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+        PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+
         AssetDatabase.SaveAssets();
     }
 }
