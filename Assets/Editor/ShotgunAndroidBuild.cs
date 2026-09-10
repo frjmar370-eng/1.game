@@ -15,6 +15,7 @@ public static class ShotgunAndroidBuild
     public static void BuildAPK()
     {
         EnsureProjectSetup();
+        ShotgunArtInstaller.InstallAndPrepare();
 
         if (!File.Exists(ScenePath))
             throw new BuildFailedException("Required scene is missing: " + ScenePath);
@@ -28,7 +29,7 @@ public static class ShotgunAndroidBuild
             File.Delete(OutputPath);
 
         AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
         BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
@@ -61,8 +62,6 @@ public static class ShotgunAndroidBuild
         PlayerSettings.companyName = "Frjmar";
         PlayerSettings.applicationIdentifier = "com.ammar.game";
 
-        // Android 16 is API 36. Build Automation currently provides API 35,
-        // so explicitly target API 35 rather than relying on an older default.
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
@@ -73,7 +72,7 @@ public static class ShotgunAndroidBuild
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)35;
 
-        // Use OpenGLES3 while diagnosing the previous gray-screen issue.
+        // Keep OpenGLES3 while the rendering issue is being diagnosed.
         PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
 
         AssetDatabase.SaveAssets();
