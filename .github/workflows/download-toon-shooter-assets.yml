@@ -32,6 +32,20 @@ env:
     https://quaternius.com/packs/stylizednaturemegakit.html
     https://quaternius.com/packs/modularscifimegakit.html
     https://quaternius.com/packs/scifigun.html
+    https://quaternius.com/packs/ultimategun.html
+    https://quaternius.com/packs/animatedguns.html
+    https://quaternius.com/packs/animatedrobot.html
+    https://quaternius.com/packs/animatedalien.html
+    https://quaternius.com/packs/animatedzombie.html
+    https://quaternius.com/packs/animatedmech.html
+    https://quaternius.com/packs/animatedtank.html
+    https://quaternius.com/packs/cars.html
+    https://quaternius.com/packs/modularstreets.html
+    https://quaternius.com/packs/ultimatespaceships.html
+    https://quaternius.com/packs/spaceships.html
+    https://quaternius.com/packs/ultimatebuildings.html
+    https://quaternius.com/packs/ultimatenature.html
+    https://quaternius.com/packs/ultimateanimatedcharacter.html
 
 jobs:
   download-assets:
