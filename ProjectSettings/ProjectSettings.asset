@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  productGUID: 00000000000000000000000000000000
+  AndroidProfiler: 0
+  AndroidFilterTouchesWhenObscured: 0
+  AndroidEnableSustainedPerformanceMode: 0
+  defaultScreenOrientation: 4
+  targetDevice: 2
+  useOnDemandResources: 0
+  accelerometerFrequency: 60
+  companyName: Frjmar
+  productName: Shotgun 3D
+  defaultCursor: {fileID: 0}
+  cursorHotspot: {x: 0, y: 0}
+  m_SplashScreenBackgroundColor: {r: 0.08, g: 0.08, b: 0.08, a: 1}
+  m_ShowUnitySplashScreen: 1
+  m_ShowUnitySplashLogo: 1
+  m_SplashScreenOverlayOpacity: 1
+  m_SplashScreenAnimation: 1
+  m_SplashScreenLogoStyle: 1
+  m_SplashScreenDrawMode: 0
+  m_SplashScreenBackgroundAnimationZoom: 1
+  m_SplashScreenLogoAnimationZoom: 1
+  m_SplashScreenBackgroundLandscapeAspect: 1
+  m_SplashScreenBackgroundPortraitAspect: 1
+  m_SplashScreenBackgroundLandscapeUvs: {x: 0, y: 0, width: 1, height: 1}
+  m_SplashScreenBackgroundPortraitUvs: {x: 0, y: 0, width: 1, height: 1}
+  m_SplashScreenLogos: []
+  m_VirtualRealitySplashScreen: {fileID: 0}
+  m_HolographicTrackingLossScreen: {fileID: 0}
+  defaultScreenWidth: 1920
+  defaultScreenHeight: 1080
+  defaultScreenWidthWeb: 960
+  defaultScreenHeightWeb: 600
+  m_StereoRenderingPath: 0
+  m_ActiveColorSpace: 0
+  unsupportedMSAAFallback: 0
+  m_AndroidSupportedAspectRatio: 2.1
+  m_AndroidMaxAspectRatio: 2.1
+  applicationIdentifier:
+    Standalone: com.ammar.game
+    Android: com.ammar.game
+  metroPackageVersion: 1.0.0.0
+  bundleVersion: 1.0
+  AndroidBundleVersionCode: 1
+  AndroidMinSdkVersion: 23
+  AndroidTargetSdkVersion: 0
+  AndroidPreferredInstallLocation: 1
+  AndroidTargetArchitectures: 2
+  AndroidTargetDevices: 0
+  AndroidSplashScreenScale: 0
+  AndroidEnableArmv9SecurityFeatures: 0
+  AndroidBuildApkPerCpuArchitecture: 0
+  AndroidTVCompatibility: 0
+  AndroidIsGame: 1
+  AndroidEnableBanner: 1
+  AndroidMinifyRelease: 0
+  AndroidMinifyDebug: 0
+  AndroidValidateAppBundleSize: 1
+  AndroidAppBundleSizeToValidate: 150
+  AndroidKeystoreName:
+  AndroidKeyaliasName: androiddebugkey
+  AndroidEnableArmv9SecurityFeatures: 0
+  AndroidApplicationEntry: 1
+  m_BuildTargetEnableVuforiaSettings: []
+  m_BuildTargetGraphicsJobs: []
+  m_BuildTargetGraphicsJobsMode: []
+  m_BuildTargetVertexCompression: []
+  m_BuildTargetPixelLightCount: []
+  m_BuildTargetShaderPrecisionModel: []
+  m_BuildTargetDynamicBatching: []
+  m_BuildTargetStaticBatching: []
+  m_BuildTargetGraphicsAPIs: []
+  m_BuildTargetVRSettings: []
+  m_BuildTargetEnableVuforiaSettings: []
+  scriptingBackend:
+    Android: 1
+  il2cppCompilerConfiguration: {}
+  managedStrippingLevel:
+    Android: 1
+  activeInputHandler: 0
+  androidSupportedAspectRatio: 2.1
+  androidMaxAspectRatio: 2.1
