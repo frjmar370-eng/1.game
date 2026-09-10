@@ -1,0 +1,61 @@
+using UnityEngine;
+
+public class ArenaBuilder3D : MonoBehaviour
+{
+    public int coverCount=18;
+    public float arenaHalfSize=16f;
+    bool built;
+
+    void Awake(){ Build(); }
+
+    public void Build(){
+        if(built)return;
+        built=true;
+        RenderSettings.fog=true;
+        RenderSettings.fogDensity=.012f;
+        CreateFloor();
+        CreateWalls();
+        CreateCover();
+        CreateLights();
+    }
+
+    void CreateFloor(){
+        GameObject f=GameObject.CreatePrimitive(PrimitiveType.Cube);
+        f.name="Arena_Floor";
+        f.transform.position=new Vector3(0,-.35f,5f);
+        f.transform.localScale=new Vector3(arenaHalfSize*2,.5f,32f);
+    }
+
+    void CreateWalls(){
+        MakeWall("North",new Vector3(0,2.2f,21f),new Vector3(42,4,.6f));
+        MakeWall("South",new Vector3(0,2.2f,-11f),new Vector3(42,4,.6f));
+        MakeWall("East",new Vector3(21,2.2f,5f),new Vector3(.6f,4,32));
+        MakeWall("West",new Vector3(-21,2.2f,5f),new Vector3(.6f,4,32));
+    }
+
+    void MakeWall(string n,Vector3 p,Vector3 s){GameObject g=GameObject.CreatePrimitive(PrimitiveType.Cube);g.name="Arena_Wall_"+n;g.transform.position=p;g.transform.localScale=s;}
+
+    void CreateCover(){
+        for(int i=0;i<coverCount;i++){
+            float x=Random.Range(-14f,14f), z=Random.Range(-7f,17f);
+            if(Mathf.Abs(x)<3f&&z<6f) { i--; continue; }
+            bool barrel=i%3==0;
+            GameObject prefab=barrel?ArtAssetResolver.Barrel():ArtAssetResolver.Crate();
+            GameObject g=prefab?Instantiate(prefab):GameObject.CreatePrimitive(barrel?PrimitiveType.Cylinder:PrimitiveType.Cube);
+            g.name=barrel?"Arena_Barrel_"+i:"Arena_Crate_"+i;
+            g.transform.position=new Vector3(x,barrel?.65f:.55f,z);
+            g.transform.rotation=Quaternion.Euler(0,Random.Range(0,360),0);
+            if(!prefab)g.transform.localScale=barrel?new Vector3(.75f,1.1f,.75f):new Vector3(1.4f,1.1f,1.4f);
+        }
+    }
+
+    void CreateLights(){
+        GameObject sun=new GameObject("Arena_Sun");
+        Light l=sun.AddComponent<Light>();
+        l.type=LightType.Directional;l.intensity=1.15f;
+        sun.transform.rotation=Quaternion.Euler(48,-28,0);
+        for(int i=0;i<4;i++){
+            GameObject g=new GameObject("Arena_Light_"+i);Light p=g.AddComponent<Light>();p.type=LightType.Point;p.range=12;p.intensity=4f;g.transform.position=new Vector3((i%2==0?-12:12),4,i<2?-5:15);
+        }
+    }
+}
