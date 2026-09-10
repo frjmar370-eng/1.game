@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -8,7 +7,6 @@ public static class Real3DPrefabBuilder
 {
     const string SourceRoot="Assets/Art/Packs";
     const string OutputRoot="Assets/Resources/RealPacks";
-    const string ControllerRoot="Assets/Resources/RealPacks/Animations";
 
     [MenuItem("Shotgun 3D/3D Assets/Build Gameplay Prefabs", priority=20)]
     public static void Build()
@@ -26,65 +24,17 @@ public static class Real3DPrefabBuilder
         Save(FindBest(Role.Wall),OutputRoot+"/Environment/Wall.prefab",false);
         Save(FindBest(Role.Door),OutputRoot+"/Environment/Door.prefab",false);
         Save(FindBest(Role.Cover),OutputRoot+"/Environment/Cover.prefab",false);
-        BuildControllers();AssetDatabase.SaveAssets();AssetDatabase.Refresh();
-        EditorUtility.DisplayDialog("3D Build","تم بناء كتالوج الشخصيات والأسلحة وقطع البيئة. العناصر غير الموجودة في حزمة الأصول تظهر كمفقودة في Console.","حسناً");
+        AssetDatabase.SaveAssets();AssetDatabase.Refresh();
+        EditorUtility.DisplayDialog("3D Build","تم بناء الشخصيات والأسلحة وقطع البيئة. شغّل بناء الـAnimator من خط الأنابيب الكامل.","حسناً");
     }
 
     enum Role { Player,Enemy,Boss,WeaponShotgun,WeaponRifle,WeaponPistol,Crate,Barrel,Floor,Wall,Door,Cover }
-
-    static GameObject FindBest(Role role)
-    {
-        string[] ids=AssetDatabase.FindAssets("t:Model",new[]{SourceRoot});GameObject best=null;int bestScore=int.MinValue;
-        foreach(string id in ids){string path=AssetDatabase.GUIDToAssetPath(id);if(IsIgnored(path))continue;GameObject g=AssetDatabase.LoadAssetAtPath<GameObject>(path);if(g==null)continue;int score=Score(path,g.name,role);if(score>bestScore){bestScore=score;best=g;}}
-        Debug.Log($"[3D Catalog] {role}: {Name(best)} score={bestScore} path={(best?AssetDatabase.GetAssetPath(best):"MISSING")}");return best;
-    }
-    static int Score(string path,string name,Role role)
-    {
-        string s=(path+"/"+name).ToLowerInvariant();int score=0;string[] strong;
-        switch(role){
-            case Role.Player:strong=new[]{"universal base","player","marine","soldier","character","humanoid"};break;
-            case Role.Enemy:strong=new[]{"enemy","alien","zombie","robot","monster"};break;
-            case Role.Boss:strong=new[]{"boss","brute","heavy","monster","enemy","robot"};break;
-            case Role.WeaponShotgun:strong=new[]{"shotgun","pump","scatter"};break;
-            case Role.WeaponRifle:strong=new[]{"rifle","assault","smg","carbine","blaster"};break;
-            case Role.WeaponPistol:strong=new[]{"pistol","handgun","sidearm"};break;
-            case Role.Crate:strong=new[]{"crate","box","container","cargo"};break;
-            case Role.Barrel:strong=new[]{"barrel","drum","tank"};break;
-            case Role.Floor:strong=new[]{"floor","platform","deck","ground","tile"};break;
-            case Role.Wall:strong=new[]{"wall","panel","bulkhead","barrier"};break;
-            case Role.Door:strong=new[]{"door","gate","airlock"};break;
-            default:strong=new[]{"cover","container","crate","pillar","column","barrel"};break;
-        }
-        for(int i=0;i<strong.Length;i++)if(s.Contains(strong[i]))score+=150-i*15;
-        if(s.Contains("icon")||s.Contains("preview")||s.Contains("thumbnail")||s.Contains("material")||s.Contains("sample"))score-=400;
-        if(path.EndsWith(".fbx",StringComparison.OrdinalIgnoreCase)||path.EndsWith(".glb",StringComparison.OrdinalIgnoreCase)||path.EndsWith(".gltf",StringComparison.OrdinalIgnoreCase))score+=10;
-        if((role==Role.Player||role==Role.Enemy||role==Role.Boss)&& (s.Contains("environment")||s.Contains("weapon")))score-=180;
-        if(role>=Role.WeaponShotgun&&role<=Role.WeaponPistol&&(s.Contains("character")||s.Contains("environment")))score-=160;
-        if(role==Role.Floor||role==Role.Wall||role==Role.Door||role==Role.Cover)if(s.Contains("character")||s.Contains("weapon"))score-=180;
-        return score;
-    }
+    static GameObject FindBest(Role role){string[] ids=AssetDatabase.FindAssets("t:Model",new[]{SourceRoot});GameObject best=null;int bestScore=int.MinValue;foreach(string id in ids){string path=AssetDatabase.GUIDToAssetPath(id);if(IsIgnored(path))continue;GameObject g=AssetDatabase.LoadAssetAtPath<GameObject>(path);if(g==null)continue;int score=Score(path,g.name,role);if(score>bestScore){bestScore=score;best=g;}}Debug.Log($"[3D Catalog] {role}: {Name(best)} score={bestScore} path={(best?AssetDatabase.GetAssetPath(best):"MISSING")}");return best;}
+    static int Score(string path,string name,Role role){string s=(path+"/"+name).ToLowerInvariant();int score=0;string[] strong;switch(role){case Role.Player:strong=new[]{"universal base","player","marine","soldier","character","humanoid"};break;case Role.Enemy:strong=new[]{"enemy","alien","zombie","robot","monster"};break;case Role.Boss:strong=new[]{"boss","brute","heavy","monster","enemy","robot"};break;case Role.WeaponShotgun:strong=new[]{"shotgun","pump","scatter"};break;case Role.WeaponRifle:strong=new[]{"rifle","assault","smg","carbine","blaster"};break;case Role.WeaponPistol:strong=new[]{"pistol","handgun","sidearm"};break;case Role.Crate:strong=new[]{"crate","box","container","cargo"};break;case Role.Barrel:strong=new[]{"barrel","drum","tank"};break;case Role.Floor:strong=new[]{"floor","platform","deck","ground","tile"};break;case Role.Wall:strong=new[]{"wall","panel","bulkhead","barrier"};break;case Role.Door:strong=new[]{"door","gate","airlock"};break;default:strong=new[]{"cover","container","crate","pillar","column","barrel"};break;}for(int i=0;i<strong.Length;i++)if(s.Contains(strong[i]))score+=150-i*15;if(s.Contains("icon")||s.Contains("preview")||s.Contains("thumbnail")||s.Contains("material")||s.Contains("sample"))score-=400;if(path.EndsWith(".fbx",StringComparison.OrdinalIgnoreCase)||path.EndsWith(".glb",StringComparison.OrdinalIgnoreCase)||path.EndsWith(".gltf",StringComparison.OrdinalIgnoreCase))score+=10;if((role==Role.Player||role==Role.Enemy||role==Role.Boss)&&(s.Contains("environment")||s.Contains("weapon")))score-=180;if(role>=Role.WeaponShotgun&&role<=Role.WeaponPistol&&(s.Contains("character")||s.Contains("environment")))score-=160;if(role==Role.Floor||role==Role.Wall||role==Role.Door||role==Role.Cover)if(s.Contains("character")||s.Contains("weapon"))score-=180;return score;}
     static bool IsIgnored(string path){string p=path.ToLowerInvariant();return p.Contains("/preview")||p.Contains("/previews/")||p.Contains("/icon")||p.Contains("/icons/")||p.Contains("/demo/");}
-    static void Save(GameObject source,string path,bool character)
-    {
-        if(source==null){Debug.LogWarning("[3D Catalog] Missing source: "+path);return;}GameObject temp=PrefabUtility.InstantiatePrefab(source) as GameObject;if(temp==null)return;temp.name=Path.GetFileNameWithoutExtension(path);Normalize(temp,character);if(character)EnsureAnimator(temp);PrefabUtility.SaveAsPrefabAsset(temp,path);UnityEngine.Object.DestroyImmediate(temp);
-    }
-    static void Normalize(GameObject root,bool character)
-    {
-        root.transform.position=Vector3.zero;root.transform.rotation=Quaternion.identity;root.transform.localScale=Vector3.one;Renderer[] rs=root.GetComponentsInChildren<Renderer>(true);
-        if(root.GetComponent<Collider>()==null&&rs.Length>0){Bounds b=rs[0].bounds;for(int i=1;i<rs.Length;i++)b.Encapsulate(rs[i].bounds);BoxCollider c=root.AddComponent<BoxCollider>();c.center=root.transform.InverseTransformPoint(b.center);Vector3 size=root.transform.InverseTransformVector(b.size);c.size=new Vector3(Mathf.Abs(size.x),Mathf.Abs(size.y),Mathf.Abs(size.z));}
-    }
+    static void Save(GameObject source,string path,bool character){if(source==null){Debug.LogWarning("[3D Catalog] Missing source: "+path);return;}GameObject temp=PrefabUtility.InstantiatePrefab(source) as GameObject;if(temp==null)return;temp.name=Path.GetFileNameWithoutExtension(path);Normalize(temp);if(character)EnsureAnimator(temp);PrefabUtility.SaveAsPrefabAsset(temp,path);UnityEngine.Object.DestroyImmediate(temp);}
+    static void Normalize(GameObject root){root.transform.position=Vector3.zero;root.transform.rotation=Quaternion.identity;root.transform.localScale=Vector3.one;Renderer[] rs=root.GetComponentsInChildren<Renderer>(true);if(root.GetComponent<Collider>()==null&&rs.Length>0){Bounds b=rs[0].bounds;for(int i=1;i<rs.Length;i++)b.Encapsulate(rs[i].bounds);BoxCollider c=root.AddComponent<BoxCollider>();c.center=root.transform.InverseTransformPoint(b.center);Vector3 size=root.transform.InverseTransformVector(b.size);c.size=new Vector3(Mathf.Abs(size.x),Mathf.Abs(size.y),Mathf.Abs(size.z));}}
     static void EnsureAnimator(GameObject root){Animator a=root.GetComponentInChildren<Animator>(true);if(a==null&&root.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length>0)a=root.AddComponent<Animator>();}
-    static void BuildControllers(){foreach(string role in new[]{"Player","Enemy"}){string path=ControllerRoot+"/"+role+"Controller.controller";AnimatorControllerProxy.Build(path);}}
+    static void EnsureFolders(){foreach(string f in new[]{OutputRoot,OutputRoot+"/Characters",OutputRoot+"/Weapons",OutputRoot+"/Environment"})Directory.CreateDirectory(Path.GetFullPath(f));}
     static string Name(GameObject g)=>g?g.name:"MISSING";
-}
-
-static class AnimatorControllerProxy
-{
-    public static void Build(string path){
-        var c=UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(path);var sm=c.layers[0].stateMachine;
-        Add(sm,"Idle",FindClip(new[]{"idle","stand","breath"}));Add(sm,"Walk",FindClip(new[]{"walk","locomotion"}));Add(sm,"Run",FindClip(new[]{"run","sprint"}));Add(sm,"Attack",FindClip(new[]{"attack","shoot","fire","punch"}));Add(sm,"Hit",FindClip(new[]{"hit","damage","hurt"}));Add(sm,"Death",FindClip(new[]{"death","die","dead"}));
-        UnityEditor.AssetDatabase.SaveAssets();
-    }
-    static void Add(UnityEditor.Animations.AnimatorStateMachine sm,string name,AnimationClip clip){var s=sm.AddState(name);if(clip)s.motion=clip;if(name=="Idle")sm.defaultState=s;}
-    static AnimationClip FindClip(string[] keys){string[] ids=AssetDatabase.FindAssets("t:AnimationClip",new[]{"Assets/Art/Packs"});AnimationClip best=null;int bestScore=int.MinValue;foreach(string id in ids){string path=AssetDatabase.GUIDToAssetPath(id);foreach(UnityEngine.Object o in AssetDatabase.LoadAllAssetsAtPath(path)){AnimationClip clip=o as AnimationClip;if(!clip||clip.name.StartsWith("__preview__",StringComparison.OrdinalIgnoreCase))continue;string s=(path+"/"+clip.name).ToLowerInvariant();int score=0;for(int i=0;i<keys.Length;i++)if(s.Contains(keys[i]))score+=100-i*10;if(score>bestScore){bestScore=score;best=clip;}}}return best;}
 }
