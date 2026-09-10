@@ -19,48 +19,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download CC0 asset packs
+      - name: Download verified CC0 Quaternius pack
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/assets
-          curl -L --fail --retry 3 -o /tmp/assets/scifi.zip https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip
-          curl -L --fail --retry 3 -o /tmp/assets/blaster.zip https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip
-          curl -L --fail --retry 3 -o /tmp/assets/survival.zip https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip
-          curl -L --fail --retry 3 -o /tmp/assets/nature.zip https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip
+          rm -rf /tmp/freemodels
+          git clone --depth 1 https://github.com/agentkaerf/FreeModels.git /tmp/freemodels
+          test -d "/tmp/freemodels/Sci-Fi Essentials Kit[Standard]/glTF"
 
-      - name: Install real GLB files
+      - name: Install real models into Unity Resources
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/extracted
-          mkdir -p /tmp/extracted/scifi /tmp/extracted/blaster /tmp/extracted/survival /tmp/extracted/nature
-          unzip -q /tmp/assets/scifi.zip -d /tmp/extracted/scifi
-          unzip -q /tmp/assets/blaster.zip -d /tmp/extracted/blaster
-          unzip -q /tmp/assets/survival.zip -d /tmp/extracted/survival
-          unzip -q /tmp/assets/nature.zip -d /tmp/extracted/nature
+          SRC="/tmp/freemodels/Sci-Fi Essentials Kit[Standard]/glTF"
+          DST="Assets/Resources/RealPacks/SciFiEssentials"
+          rm -rf "$DST"
+          mkdir -p "$DST"
+          cp -f "$SRC"/*.gltf "$DST"/
+          cp -f "$SRC"/*.bin "$DST"/
+          cp -f "$SRC"/*.png "$DST"/
 
-          rm -rf Assets/Art/Models/RealPacks
-          mkdir -p Assets/Art/Models/RealPacks/SciFiEssentials
-          mkdir -p Assets/Art/Models/RealPacks/KenneyBlaster
-          mkdir -p Assets/Art/Models/RealPacks/KenneySurvival
-          mkdir -p Assets/Art/Models/RealPacks/KenneyNature
+          cat > Assets/Resources/RealPacks/REAL_ASSETS.md <<'EOF'
+# Real 3D assets
 
-          find /tmp/extracted/scifi -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/SciFiEssentials/ \;
-          find /tmp/extracted/blaster -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/KenneyBlaster/ \;
-          find /tmp/extracted/survival -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/KenneySurvival/ \;
-          find /tmp/extracted/nature -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/KenneyNature/ \;
+Source: Quaternius Sci-Fi Essentials Kit (Standard) mirrored by agentkaerf/FreeModels.
+License: CC0 1.0 Universal.
 
-          cat > Assets/Art/Models/REAL_ASSETS.md <<'EOF'
-# Real 3D asset packs
+Included real assets:
+- Animated robot/enemy models
+- Multiple guns
+- Crates, barrels, health/ammo props
+- Textures and binary geometry buffers
 
-All imported model sources are real GLB/glTF assets and are CC0 licensed.
-
-Sources:
-- Quaternius Sci-Fi Essentials Kit — OpenGameArt model archive.
-- Kenney Blaster Kit 2.1 — official Kenney archive.
-- Kenney Survival Kit — official Kenney archive.
-- Kenney Nature Kit — official Kenney archive.
+The Unity project uses glTFast 6.17.0 for glTF import.
 EOF
 
           rm -f Assets/Art/Models/Player/Player.glb
@@ -74,7 +65,7 @@ EOF
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add Assets/Art/Models
+          git add Assets/Resources/RealPacks Assets/Art/Models
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'Import real CC0 GLB asset packs'
+          git commit -m 'Import real CC0 Quaternius 3D assets'
           git push
