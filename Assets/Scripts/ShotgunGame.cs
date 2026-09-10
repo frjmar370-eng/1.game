@@ -14,6 +14,7 @@ public class ShotgunGame : MonoBehaviour
     public float spread = .075f;
     public Text ammoText, scoreText, healthText, messageText;
     public MobileHUD mobileHUD;
+    public bool IsGameOver => gameOver;
 
     float nextFire;
     int score;
@@ -29,7 +30,7 @@ public class ShotgunGame : MonoBehaviour
     void Update()
     {
         if (gameOver) return;
-        if (reloading && Time.time >= reloadDone) { reloading = false; ammo = maxAmmo; UpdateUI(); }
+        if (reloading && Time.time >= reloadDone) { reloading = false; ammo = maxAmmo; if (messageText) messageText.text = ""; UpdateUI(); }
         Look(); Move();
         bool fire = Input.GetMouseButton(0) || (mobileHUD && mobileHUD.FireHeld);
         if (fire) Fire();
@@ -68,7 +69,7 @@ public class ShotgunGame : MonoBehaviour
             if (Physics.Raycast(playerCamera.transform.position, direction.normalized, out RaycastHit hit, range))
             {
                 TargetDummy target = hit.collider.GetComponentInParent<TargetDummy>();
-                if (target != null) { target.Hit(1); score += 10; }
+                if (target != null) { bool killed = target.Hit(1); score += killed ? 100 : 5; }
             }
         }
         UpdateUI();
@@ -89,7 +90,8 @@ public class ShotgunGame : MonoBehaviour
         if (health == 0)
         {
             gameOver = true;
-            if (messageText) messageText.text = "GAME OVER\nTap/restart the scene";
+            if (messageText) messageText.text = "GAME OVER";
+            if (mobileHUD) mobileHUD.ShowRestart();
         }
     }
 
