@@ -24,8 +24,9 @@ public class SceneBootstrap : MonoBehaviour
     void StartGame(){
         if(gameStarted)return;gameStarted=true;
         GameObject menu=GameObject.Find("Start Screen Canvas");if(menu)Destroy(menu);
-        BuildPlayer();BuildHUD();
+        BuildPlayer();
         GameObject flowObject=new GameObject("Game Flow");flowObject.AddComponent<GameFlow>();
+        BuildHUD();
     }
 
     void BuildPlayer(){
