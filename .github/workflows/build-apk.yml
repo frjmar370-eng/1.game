@@ -3,40 +3,48 @@ name: Build Shotgun 3D APK
 on:
   workflow_dispatch:
 
+concurrency:
+  group: shotgun3d-android-build
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-22.04
     timeout-minutes: 90
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      # Let Buildalon manage Unity Hub and the Unity Editor installation.
+      # Buildalon manages Unity Hub and the Unity Editor installation.
       # The previous workflow manually installed Unity Hub with apt and
       # started Xvfb; that custom setup was the step that hung for hours.
       - name: Setup Unity 2022.3 + Android
-        uses: buildalon/unity-setup@v2
+        id: unity-setup
+        uses: buildalon/unity-setup@30fcbcb56c10ea5d64298e970d952b8d29bc268b # v2.6.0
         with:
           version-file: ProjectSettings/ProjectVersion.txt
           unity-version: 2022.3.62f2
           build-targets: Android
           cache-installation: true
-          auto-update-hub: false
 
       - name: Activate Unity Personal License
-        uses: buildalon/activate-unity-license@v2
+        uses: buildalon/activate-unity-license@e0d245d0787b7b9931b56ccbde3b508f6b70f1af # v2.2.2
         with:
           license: Personal
           username: ${{ secrets.UNITY_USERNAME }}
           password: ${{ secrets.UNITY_PASSWORD }}
 
       - name: Build Unity project
-        uses: buildalon/unity-action@v3
+        uses: buildalon/unity-action@2d420bea0f47fbe01377601fa3231bcf4de04f3a # v3.1.0
         with:
           log-name: Android-Build
           build-target: Android
-          project-path: .
+          project-path: ${{ steps.unity-setup.outputs.unity-project-path }}
           args: -quit -nographics -batchmode -executeMethod ShotgunAndroidBuild.BuildAPK
 
       - name: Verify APK
@@ -47,7 +55,7 @@ jobs:
           ls -lh Builds/Shotgun3D.apk
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: Shotgun3D-APK
           path: Builds/Shotgun3D.apk
