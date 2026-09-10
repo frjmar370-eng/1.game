@@ -9,55 +9,16 @@ public class GameFlow : MonoBehaviour
     public float roundDuration=60f;
     float timeLeft; int round=1; int aliveTargets; bool paused,transitioning; float nextRoundAt;
     GameObject enemyPrefab;
-
     void Awake(){if(Instance!=null&&Instance!=this){Destroy(gameObject);return;}Instance=this;enemyPrefab=Resources.Load<GameObject>("Characters/Enemy");}
-    void Start(){
-        timeLeft=roundDuration; aliveTargets=FindObjectsOfType<TargetDummy>().Length;
-        EnsureSystems(); SpawnPickups(4); UpdateUI();
-    }
-    void EnsureSystems(){
-        if(WeaponSystem.Instance==null) gameObject.AddComponent<WeaponSystem>();
-        if(MissionSystem.Instance==null) gameObject.AddComponent<MissionSystem>();
-        if(AudioManager.Instance==null) gameObject.AddComponent<AudioManager>();
-    }
-    void Update(){
-        if(paused)return;
-        if(transitioning){if(Time.time>=nextRoundAt){transitioning=false;EndRound();}UpdateUI();return;}
-        ShotgunGame player=FindObjectOfType<ShotgunGame>();
-        if(player&&player.IsGameOver)return;
-        timeLeft-=Time.deltaTime;
-        if(timeLeft<=0f||aliveTargets<=0)BeginNextRound();
-        UpdateUI();
-    }
+    void Start(){timeLeft=roundDuration;aliveTargets=FindObjectsOfType<TargetDummy>().Length;EnsureSystems();SpawnPickups(4);UpdateUI();}
+    void EnsureSystems(){if(WeaponSystem.Instance==null)gameObject.AddComponent<WeaponSystem>();if(MissionSystem.Instance==null)gameObject.AddComponent<MissionSystem>();if(AudioManager.Instance==null)gameObject.AddComponent<AudioManager>();}
+    void Update(){if(paused)return;if(transitioning){if(Time.time>=nextRoundAt){transitioning=false;EndRound();}UpdateUI();return;}ShotgunGame player=FindObjectOfType<ShotgunGame>();if(player&&player.IsGameOver)return;timeLeft-=Time.deltaTime;if(timeLeft<=0f||aliveTargets<=0)BeginNextRound();UpdateUI();}
     public void TargetKilled(){aliveTargets=Mathf.Max(0,aliveTargets-1);if(aliveTargets==0&&!transitioning)BeginNextRound();}
-    void BeginNextRound(){if(transitioning)return;transitioning=true;nextRoundAt=Time.time+1.2f;if(messageText)messageText.text="WAVE CLEAR!";if(AudioManager.Instance!=null)AudioManager.Instance.Click();}
+    void BeginNextRound(){if(transitioning)return;transitioning=true;nextRoundAt=Time.time+1.2f;if(messageText)messageText.text="WAVE CLEAR!";if(AudioManager.Instance)AudioManager.Instance.Click();}
     public void TogglePause(){paused=!paused;Time.timeScale=paused?0f:1f;if(messageText)messageText.text=paused?"PAUSED":"";}
     public void RestartGame(){Time.timeScale=1f;SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);}
-    void EndRound(){
-        round++; timeLeft=Mathf.Max(30f,roundDuration-round*1.5f);
-        SpawnRoundTargets(Mathf.Min(24,4+round*2)); SpawnPickups(3+round%3);
-        if(messageText)messageText.text="ROUND "+round; if(AudioManager.Instance!=null)AudioManager.Instance.Click();
-    }
-    void SpawnRoundTargets(int count){
-        aliveTargets=count;
-        for(int i=0;i<count;i++){
-            Vector3 pos=new Vector3(Random.Range(-10f,10f),0,Random.Range(3f,11f));
-            GameObject t=enemyPrefab?Instantiate(enemyPrefab,pos,Quaternion.identity):GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            t.name="Enemy_R"+round+"_"+i;
-            if(!enemyPrefab){t.transform.position=new Vector3(pos.x,1.1f,pos.z);t.transform.localScale=Vector3.one*1.1f;}
-            TargetDummy d=t.GetComponent<TargetDummy>();if(d==null)d=t.AddComponent<TargetDummy>();
-            d.health=2+Mathf.Min(6,round/2);d.moveSpeed=1.2f+round*.08f;d.damageToPlayer=8+Mathf.Min(14,round);d.attackInterval=Mathf.Max(.8f,2.5f-round*.08f);d.chaseDistance=Mathf.Min(28f,18f+round*.5f);
-            EnemyVariants v=t.GetComponent<EnemyVariants>();if(v==null)v=t.AddComponent<EnemyVariants>();
-            int roll=(i+round)%10;v.type=roll<6?EnemyVariants.EnemyType.Grunt:(roll<9?EnemyVariants.EnemyType.Runner:EnemyVariants.EnemyType.Tank);
-        }
-    }
-    void SpawnPickups(int count){
-        for(int i=0;i<count;i++){
-            GameObject o=GameObject.CreatePrimitive(PrimitiveType.Sphere);o.name="Pickup_"+round+"_"+i;
-            o.transform.position=new Vector3(Random.Range(-10f,10f),.65f,Random.Range(-5f,10f));o.transform.localScale=Vector3.one*.38f;
-            Destroy(o.GetComponent<Collider>());SphereCollider trigger=o.AddComponent<SphereCollider>();trigger.isTrigger=true;
-            PickupItem p=o.AddComponent<PickupItem>();p.kind=(i%3==0)?PickupItem.Kind.Health:PickupItem.Kind.Ammo;p.amount=p.kind==PickupItem.Kind.Health?20:2;
-        }
-    }
+    void EndRound(){round++;timeLeft=Mathf.Max(30f,roundDuration-round*1.5f);SpawnRoundTargets(Mathf.Min(24,4+round*2));SpawnPickups(3+round%3);if(messageText)messageText.text="ROUND "+round;if(AudioManager.Instance)AudioManager.Instance.Click();}
+    void SpawnRoundTargets(int count){aliveTargets=count;for(int i=0;i<count;i++){Vector3 pos=new Vector3(Random.Range(-10f,10f),0,Random.Range(3f,11f));GameObject t=enemyPrefab?Instantiate(enemyPrefab,pos,Quaternion.identity):GameObject.CreatePrimitive(PrimitiveType.Capsule);t.name="Enemy_R"+round+"_"+i;if(!enemyPrefab){t.transform.position=new Vector3(pos.x,1.1f,pos.z);t.transform.localScale=Vector3.one*1.1f;}TargetDummy d=t.GetComponent<TargetDummy>();if(d==null)d=t.AddComponent<TargetDummy>();d.health=2+Mathf.Min(6,round/2);d.moveSpeed=1.2f+round*.08f;d.damageToPlayer=8+Mathf.Min(14,round);d.attackInterval=Mathf.Max(.8f,2.5f-round*.08f);d.chaseDistance=Mathf.Min(28f,18f+round*.5f);EnemyVariants v=t.GetComponent<EnemyVariants>();if(v==null)v=t.AddComponent<EnemyVariants>();int roll=(i+round)%10;v.type=roll<6?EnemyType.Grunt:(roll<9?EnemyType.Runner:EnemyType.Tank);}}
+    void SpawnPickups(int count){for(int i=0;i<count;i++){GameObject o=GameObject.CreatePrimitive(PrimitiveType.Sphere);o.name="Pickup_"+round+"_"+i;o.transform.position=new Vector3(Random.Range(-10f,10f),.65f,Random.Range(-5f,10f));o.transform.localScale=Vector3.one*.38f;Destroy(o.GetComponent<Collider>());SphereCollider trigger=o.AddComponent<SphereCollider>();trigger.isTrigger=true;PickupItem p=o.AddComponent<PickupItem>();p.kind=(i%3==0)?PickupItem.Kind.Health:PickupItem.Kind.Ammo;p.amount=p.kind==PickupItem.Kind.Health?20:2;}}
     void UpdateUI(){if(roundText)roundText.text="ROUND  "+round+"   "+Mathf.CeilToInt(Mathf.Max(0,timeLeft))+"   ENEMIES "+aliveTargets;}
 }
