@@ -27,13 +27,3 @@ public class MobileInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         if (handle) handle.anchoredPosition = Value * radius;
     }
 }
-
-public class MobileActionButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
-{
-    public enum Action { Fire, Reload }
-    public Action action;
-    public bool Held { get; private set; }
-
-    public void OnPointerDown(PointerEventData eventData) => Held = true;
-    public void OnPointerUp(PointerEventData eventData) => Held = false;
-}
