@@ -1,4 +1,4 @@
-name: Download 3D Game Assets
+name: Download Game Resources
 
 on:
   push:
@@ -9,6 +9,21 @@ on:
 permissions:
   contents: write
 
+env:
+  KENNEY_PACKS: >-
+    interface-sounds
+    impact-sounds
+    digital-audio
+    rpg-audio
+    sci-fi-sounds
+    music-jingles
+    ui-audio
+    particle-pack
+    smoke-particles
+    splat-pack
+    crosshair-pack
+    ui-pack-sci-fi
+
 jobs:
   download-assets:
     runs-on: ubuntu-latest
@@ -18,57 +33,97 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install downloader
-        run: python -m pip install --disable-pip-version-check gdown
+      - name: Install download tools
+        run: |
+          python -m pip install --disable-pip-version-check gdown
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq unzip curl
 
-      - name: Download Quaternius Toon Shooter Game Kit
+      - name: Download Quaternius 3D game pack
         run: |
           rm -rf /tmp/toon-shooter-assets
           mkdir -p /tmp/toon-shooter-assets
           gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets
 
-      - name: Download Quaternius Ultimate Modular Sci-Fi Pack (map)
+      - name: Download Quaternius modular sci-fi map pack
         run: |
           rm -rf /tmp/modular-sci-fi-assets
           mkdir -p /tmp/modular-sci-fi-assets
           gdown --folder 'https://drive.google.com/drive/folders/1zpr6HxVa-sCV93IHubN3A1d8HhF2wGbM?usp=sharing' -O /tmp/modular-sci-fi-assets
 
-      - name: Install game and map assets into Unity project
+      - name: Download official Kenney audio, VFX and UI packs
         run: |
+          set -e
+          mkdir -p /tmp/kenney
+          for pack in $KENNEY_PACKS; do
+            echo "Downloading Kenney pack: $pack"
+            curl -fL --retry 3 --retry-delay 2 "https://kenney.nl/assets/${pack}/download" -o "/tmp/kenney/${pack}.zip"
+            mkdir -p "/tmp/kenney/${pack}"
+            unzip -q -o "/tmp/kenney/${pack}.zip" -d "/tmp/kenney/${pack}"
+          done
+
+      - name: Install all downloaded resources
+        run: |
+          set -e
           mkdir -p Assets/Art/Models/Quaternius/ToonShooter
           mkdir -p Assets/Art/Models/Quaternius/Map/UltimateModularSciFi
+          mkdir -p Assets/Art/Audio/Kenney
+          mkdir -p Assets/Art/VFX/Kenney
+          mkdir -p Assets/Art/UI/Kenney
 
-          find /tmp/toon-shooter-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -print0 | while IFS= read -r -d '' f; do
+          find /tmp/toon-shooter-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
             rel="${f#/tmp/toon-shooter-assets/}"
             dest="Assets/Art/Models/Quaternius/ToonShooter/$rel"
             mkdir -p "$(dirname "$dest")"
             cp "$f" "$dest"
           done
 
-          find /tmp/modular-sci-fi-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -print0 | while IFS= read -r -d '' f; do
+          find /tmp/modular-sci-fi-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
             rel="${f#/tmp/modular-sci-fi-assets/}"
             dest="Assets/Art/Models/Quaternius/Map/UltimateModularSciFi/$rel"
             mkdir -p "$(dirname "$dest")"
             cp "$f" "$dest"
           done
 
-          game_count=$(find Assets/Art/Models/Quaternius/ToonShooter -type f | wc -l)
-          map_count=$(find Assets/Art/Models/Quaternius/Map/UltimateModularSciFi -type f | wc -l)
-          echo "Installed game asset files: $game_count"
-          echo "Installed map asset files: $map_count"
-          if [ "$game_count" -eq 0 ] || [ "$map_count" -eq 0 ]; then
-            echo 'ERROR: Game or map assets were not downloaded.'
-            exit 1
-          fi
+          for pack in $KENNEY_PACKS; do
+            case "$pack" in
+              interface-sounds|impact-sounds|digital-audio|rpg-audio|sci-fi-sounds|music-jingles|ui-audio)
+                destroot="Assets/Art/Audio/Kenney/$pack" ;;
+              particle-pack|smoke-particles|splat-pack)
+                destroot="Assets/Art/VFX/Kenney/$pack" ;;
+              crosshair-pack|ui-pack-sci-fi)
+                destroot="Assets/Art/UI/Kenney/$pack" ;;
+            esac
+            mkdir -p "$destroot"
+            find "/tmp/kenney/$pack" -type f \( -iname '*.wav' -o -iname '*.ogg' -o -iname '*.mp3' -o -iname '*.flac' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.svg' -o -iname '*.json' -o -iname '*.txt' -o -iname '*.ttf' -o -iname '*.otf' \) -print0 | while IFS= read -r -d '' f; do
+              rel="${f#/tmp/kenney/$pack/}"
+              dest="$destroot/$rel"
+              mkdir -p "$(dirname "$dest")"
+              cp "$f" "$dest"
+            done
+          done
 
-      - name: Commit downloaded assets
+          model_count=$(find Assets/Art/Models/Quaternius -type f | wc -l)
+          audio_count=$(find Assets/Art/Audio/Kenney -type f | wc -l)
+          vfx_count=$(find Assets/Art/VFX/Kenney -type f | wc -l)
+          ui_count=$(find Assets/Art/UI/Kenney -type f | wc -l)
+          echo "3D files: $model_count"
+          echo "Audio files: $audio_count"
+          echo "VFX files: $vfx_count"
+          echo "UI files: $ui_count"
+          test "$model_count" -gt 0
+          test "$audio_count" -gt 0
+          test "$vfx_count" -gt 0
+          test "$ui_count" -gt 0
+
+      - name: Commit downloaded resources
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add Assets/Art/Models/Quaternius
+          git add Assets/Art
           if git diff --cached --quiet; then
             echo 'No new asset files to commit.'
             exit 0
           fi
-          git commit -m 'Add game and modular sci-fi map 3D assets'
+          git commit -m 'Add game models audio VFX and UI resources'
           git push
