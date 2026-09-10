@@ -18,67 +18,45 @@ public static class ShotgunArtInstaller
         Directory.CreateDirectory(ResourcesRoot + "/Environment");
         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
-        CreatePrefabFromModel("Player", ModelRoot + "/Player", ResourcesRoot + "/Characters/Player.prefab");
-        CreatePrefabFromModel("Enemy", ModelRoot + "/Enemy", ResourcesRoot + "/Characters/Enemy.prefab");
-        CreatePrefabFromModel("Shotgun", ModelRoot + "/Weapons", ResourcesRoot + "/Weapons/Shotgun.prefab");
-        CreatePrefabFromModel("Crate", ModelRoot + "/Environment", ResourcesRoot + "/Environment/Crate.prefab");
-        CreatePrefabFromModel("Barrel", ModelRoot + "/Environment", ResourcesRoot + "/Environment/Barrel.prefab");
+        CreatePrefabFromGlb("Player", ModelRoot + "/Player/Player.glb", ResourcesRoot + "/Characters/Player.prefab");
+        CreatePrefabFromGlb("Enemy", ModelRoot + "/Enemy/Enemy.glb", ResourcesRoot + "/Characters/Enemy.prefab");
+        CreatePrefabFromGlb("Shotgun", ModelRoot + "/Weapons/Shotgun.glb", ResourcesRoot + "/Weapons/Shotgun.prefab");
+        CreatePrefabFromGlb("Crate", ModelRoot + "/Environment/Crate.glb", ResourcesRoot + "/Environment/Crate.prefab");
+        CreatePrefabFromGlb("Barrel", ModelRoot + "/Environment/Barrel.glb", ResourcesRoot + "/Environment/Barrel.prefab");
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
     }
 
-    private static void CreatePrefabFromModel(string modelName, string searchFolder, string prefabPath)
+    private static void CreatePrefabFromGlb(string modelName, string glbPath, string prefabPath)
     {
-        string directory = Path.GetDirectoryName(prefabPath)?.Replace('\\', '/');
-        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-
-        string[] guids = AssetDatabase.FindAssets("t:Model", new[] { searchFolder });
-        string selected = null;
-        foreach (string guid in guids)
+        if (!File.Exists(glbPath))
         {
-            string path = AssetDatabase.GUIDToAssetPath(guid);
-            if (Path.GetFileNameWithoutExtension(path).Equals(modelName, System.StringComparison.OrdinalIgnoreCase))
-            {
-                selected = path;
-                break;
-            }
-        }
-
-        if (selected == null)
-        {
-            Debug.LogWarning("Local model not found: " + modelName + " in " + searchFolder);
+            Debug.LogWarning("Local GLB not found: " + glbPath);
             return;
         }
 
-        GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(selected);
-        if (source == null)
-        {
-            Debug.LogWarning("Could not import model: " + selected);
-            return;
-        }
+        string tempFolder = "Assets/Art/ImportedGLB/" + modelName;
+        Directory.CreateDirectory(tempFolder);
+        AssetDatabase.Refresh();
 
-        GameObject instance = PrefabUtility.InstantiatePrefab(source) as GameObject;
-        if (instance == null) return;
-
-        instance.name = modelName;
+        GameObject instance = null;
         try
         {
-            if (instance.GetComponentInChildren<Collider>() == null)
-            {
-                MeshRenderer renderer = instance.GetComponentInChildren<MeshRenderer>();
-                if (renderer != null)
-                {
-                    BoxCollider box = instance.AddComponent<BoxCollider>();
-                    box.center = instance.transform.InverseTransformPoint(renderer.bounds.center);
-                    box.size = instance.transform.InverseTransformVector(renderer.bounds.size);
-                }
-            }
+            instance = LocalGlbImporter.Import(glbPath, tempFolder, modelName);
+            if (instance == null) return;
+            instance.name = modelName;
+            string directory = Path.GetDirectoryName(prefabPath)?.Replace('\\', '/');
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
             PrefabUtility.SaveAsPrefabAsset(instance, prefabPath);
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError("Failed to import GLB " + glbPath + ": " + ex.Message);
         }
         finally
         {
-            Object.DestroyImmediate(instance);
+            if (instance != null) Object.DestroyImmediate(instance);
         }
     }
 }
