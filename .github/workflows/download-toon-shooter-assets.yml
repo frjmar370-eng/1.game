@@ -23,7 +23,7 @@ jobs:
           python -m pip install --disable-pip-version-check gdown
           rm -rf /tmp/toon-shooter-assets
           mkdir -p /tmp/toon-shooter-assets
-          gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets --remaining-ok
+          gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets
 
       - name: Install models into Unity project
         run: |
@@ -34,7 +34,12 @@ jobs:
             mkdir -p "$(dirname "$dest")"
             cp "$f" "$dest"
           done
-          echo "Installed model files:"
+          count=$(find Assets/Art/Models/Quaternius -type f | wc -l)
+          echo "Installed model/texture files: $count"
+          if [ "$count" -eq 0 ]; then
+            echo 'ERROR: No supported Quaternius asset files were downloaded.'
+            exit 1
+          fi
           find Assets/Art/Models/Quaternius -type f | sort | head -200
 
       - name: Commit downloaded assets
