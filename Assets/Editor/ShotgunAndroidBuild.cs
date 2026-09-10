@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public static class ShotgunAndroidBuild
 {
@@ -60,7 +61,7 @@ public static class ShotgunAndroidBuild
         PlayerSettings.companyName = "Frjmar";
         PlayerSettings.applicationIdentifier = "com.ammar.game";
 
-        // Android device profile: landscape FPS controls, ARM64, IL2CPP.
+        // Stable Android device profile for this FPS build.
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
@@ -70,6 +71,9 @@ public static class ShotgunAndroidBuild
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+
+        // Prefer OpenGLES3 for broad Android compatibility while diagnosing the gray-screen issue.
+        PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
 
         AssetDatabase.SaveAssets();
     }
