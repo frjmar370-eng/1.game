@@ -5,11 +5,10 @@ public class CombatFeedback : MonoBehaviour
     public static CombatFeedback Instance { get; private set; }
     float shake;
     Camera cam;
-    Vector3 baseLocal;
     AudioSource audioSource;
 
-    void Awake(){Instance=this;cam=Camera.main;if(cam)baseLocal=cam.transform.localPosition;audioSource=gameObject.AddComponent<AudioSource>();audioSource.playOnAwake=false;audioSource.spatialBlend=0f;}
-    void LateUpdate(){if(!cam)return;if(shake>0f){shake=Mathf.MoveTowards(shake,0f,Time.deltaTime*3.8f);cam.transform.localPosition=baseLocal+Random.insideUnitSphere*shake;}else cam.transform.localPosition=baseLocal;}
+    void Awake(){if(Instance!=null&&Instance!=this){Destroy(gameObject);return;}Instance=this;cam=Camera.main;audioSource=gameObject.AddComponent<AudioSource>();audioSource.playOnAwake=false;audioSource.spatialBlend=0f;}
+    void LateUpdate(){if(!cam)return;if(shake>0f){shake=Mathf.MoveTowards(shake,0f,Time.deltaTime*3.8f);cam.transform.position+=Random.insideUnitSphere*shake*.55f;cam.transform.rotation*=Quaternion.Euler(Random.insideUnitSphere*shake*2.2f);}}
     public void Shake(float amount){shake=Mathf.Max(shake,amount);}
     public void Shot(){if(audioSource)audioSource.PlayOneShot(MakeClip(105f,.055f));}
     public void Hit(){if(audioSource)audioSource.PlayOneShot(MakeClip(760f,.035f));Shake(.045f);}
