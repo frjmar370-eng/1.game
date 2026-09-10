@@ -58,7 +58,7 @@ public static class ShotgunAndroidBuild
 
         PlayerSettings.productName = "Shotgun 3D";
         PlayerSettings.companyName = "Frjmar";
-        PlayerSettings.applicationIdentifier = "com.frjmar.shotgun3d";
+        PlayerSettings.applicationIdentifier = "com.ammar.game";
 
         // Android device profile: landscape FPS controls, ARM64, IL2CPP.
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
