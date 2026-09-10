@@ -61,7 +61,8 @@ public static class ShotgunAndroidBuild
         PlayerSettings.companyName = "Frjmar";
         PlayerSettings.applicationIdentifier = "com.ammar.game";
 
-        // Stable Android device profile for this FPS build.
+        // Android 16 is API 36. Build Automation currently provides API 35,
+        // so explicitly target API 35 rather than relying on an older default.
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
@@ -70,9 +71,9 @@ public static class ShotgunAndroidBuild
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-        PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
+        PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)35;
 
-        // Prefer OpenGLES3 for broad Android compatibility while diagnosing the gray-screen issue.
+        // Use OpenGLES3 while diagnosing the previous gray-screen issue.
         PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
 
         AssetDatabase.SaveAssets();
