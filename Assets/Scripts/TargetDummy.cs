@@ -41,28 +41,41 @@ public class TargetDummy : MonoBehaviour
         }
     }
 
-    public void Hit(int damage)
+    public bool Hit(int damage)
     {
         health -= damage;
         if (body) StartCoroutine(HitFlash());
         if (health <= 0)
         {
+            if (GameFlow.Instance) GameFlow.Instance.TargetKilled();
             GameObject fx = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             fx.name = "HitFX";
             fx.transform.position = transform.position;
             fx.transform.localScale = Vector3.one * .35f;
+            Renderer r = fx.GetComponent<Renderer>();
+            if (r) r.material = MakeMaterial(new Color(1f,.55f,.08f));
             Destroy(fx.GetComponent<Collider>());
             Destroy(fx, .12f);
             Destroy(gameObject);
+            return true;
         }
+        return false;
     }
 
     System.Collections.IEnumerator HitFlash()
     {
+        if (!body) yield break;
         body.material.color = Color.white;
         transform.localScale = baseScale * 1.08f;
         yield return new WaitForSeconds(.07f);
         if (body) body.material.color = baseColor;
         transform.localScale = baseScale;
+    }
+
+    Material MakeMaterial(Color color)
+    {
+        Material m = new Material(Shader.Find("Standard"));
+        m.color = color;
+        return m;
     }
 }
