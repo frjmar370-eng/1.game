@@ -26,10 +26,8 @@ public class GameFlow : MonoBehaviour
     public void TogglePause(){paused=!paused;Time.timeScale=paused?0f:1f;if(messageText)messageText.text=paused?"PAUSED":"";}
     public void RestartGame(){Time.timeScale=1f;SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);}
     void EndRound(){
-        round++;
-        timeLeft=Mathf.Max(30f,roundDuration-round*1.5f);
-        SpawnRoundTargets(Mathf.Min(24,4+round*2));
-        SpawnPickups(3+round%3);
+        round++; timeLeft=Mathf.Max(30f,roundDuration-round*1.5f);
+        SpawnRoundTargets(Mathf.Min(24,4+round*2)); SpawnPickups(3+round%3);
         if(messageText)messageText.text="ROUND "+round;
     }
     void SpawnRoundTargets(int count){
@@ -41,6 +39,9 @@ public class GameFlow : MonoBehaviour
             if(!enemyPrefab){t.transform.position=new Vector3(pos.x,1.1f,pos.z);t.transform.localScale=Vector3.one*1.1f;}
             TargetDummy d=t.GetComponent<TargetDummy>();if(d==null)d=t.AddComponent<TargetDummy>();
             d.health=2+Mathf.Min(6,round/2);d.moveSpeed=1.2f+round*.08f;d.damageToPlayer=8+Mathf.Min(14,round);d.attackInterval=Mathf.Max(.8f,2.5f-round*.08f);d.chaseDistance=Mathf.Min(28f,18f+round*.5f);
+            EnemyVariants v=t.GetComponent<EnemyVariants>();if(v==null)v=t.AddComponent<EnemyVariants>();
+            int roll=(i+round)%10;
+            v.type=roll<6?EnemyVariants.EnemyType.Grunt:(roll<9?EnemyVariants.EnemyType.Runner:EnemyVariants.EnemyType.Tank);
         }
     }
     void SpawnPickups(int count){
