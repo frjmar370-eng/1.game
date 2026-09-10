@@ -31,9 +31,11 @@ jobs:
       # GameCI runs Unity from a prepared Docker image instead of installing
       # Unity Hub on the GitHub runner. This avoids the /opt/unityhub/unityhub
       # installation failure seen with the previous Buildalon setup step.
+      # Unity Personal still needs a one-time UNITY_LICENSE (.ulf) secret.
       - name: Build Unity project
         uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4
         env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_USERNAME }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
