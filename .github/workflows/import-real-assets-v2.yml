@@ -59,10 +59,8 @@ All imported model sources are real GLB/glTF assets and are CC0 licensed.
 Sources:
 - Quaternius Sci-Fi Essentials Kit — OpenGameArt model archive.
 - Kenney Blaster Kit 2.1 — official Kenney archive.
-- Kenney Survival Kit 2.0 — official Kenney archive.
-- Kenney Nature Kit 2.1 — official Kenney archive.
-
-These replace the previous tiny generated placeholder GLBs.
+- Kenney Survival Kit — official Kenney archive.
+- Kenney Nature Kit — official Kenney archive.
 EOF
 
           rm -f Assets/Art/Models/Player/Player.glb
