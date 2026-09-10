@@ -18,29 +18,48 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install downloader
+        run: python -m pip install --disable-pip-version-check gdown
+
       - name: Download Quaternius Toon Shooter Game Kit
         run: |
-          python -m pip install --disable-pip-version-check gdown
           rm -rf /tmp/toon-shooter-assets
           mkdir -p /tmp/toon-shooter-assets
           gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets
 
-      - name: Install models into Unity project
+      - name: Download Quaternius Ultimate Modular Sci-Fi Pack (map)
         run: |
-          mkdir -p Assets/Art/Models/Quaternius
+          rm -rf /tmp/modular-sci-fi-assets
+          mkdir -p /tmp/modular-sci-fi-assets
+          gdown --folder 'https://drive.google.com/drive/folders/1zpr6HxVa-sCV93IHubN3A1d8HhF2wGbM?usp=sharing' -O /tmp/modular-sci-fi-assets
+
+      - name: Install game and map assets into Unity project
+        run: |
+          mkdir -p Assets/Art/Models/Quaternius/ToonShooter
+          mkdir -p Assets/Art/Models/Quaternius/Map/UltimateModularSciFi
+
           find /tmp/toon-shooter-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -print0 | while IFS= read -r -d '' f; do
             rel="${f#/tmp/toon-shooter-assets/}"
-            dest="Assets/Art/Models/Quaternius/$rel"
+            dest="Assets/Art/Models/Quaternius/ToonShooter/$rel"
             mkdir -p "$(dirname "$dest")"
             cp "$f" "$dest"
           done
-          count=$(find Assets/Art/Models/Quaternius -type f | wc -l)
-          echo "Installed model/texture files: $count"
-          if [ "$count" -eq 0 ]; then
-            echo 'ERROR: No supported Quaternius asset files were downloaded.'
+
+          find /tmp/modular-sci-fi-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -print0 | while IFS= read -r -d '' f; do
+            rel="${f#/tmp/modular-sci-fi-assets/}"
+            dest="Assets/Art/Models/Quaternius/Map/UltimateModularSciFi/$rel"
+            mkdir -p "$(dirname "$dest")"
+            cp "$f" "$dest"
+          done
+
+          game_count=$(find Assets/Art/Models/Quaternius/ToonShooter -type f | wc -l)
+          map_count=$(find Assets/Art/Models/Quaternius/Map/UltimateModularSciFi -type f | wc -l)
+          echo "Installed game asset files: $game_count"
+          echo "Installed map asset files: $map_count"
+          if [ "$game_count" -eq 0 ] || [ "$map_count" -eq 0 ]; then
+            echo 'ERROR: Game or map assets were not downloaded.'
             exit 1
           fi
-          find Assets/Art/Models/Quaternius -type f | sort | head -200
 
       - name: Commit downloaded assets
         run: |
@@ -51,5 +70,5 @@ jobs:
             echo 'No new asset files to commit.'
             exit 0
           fi
-          git commit -m 'Add Quaternius Toon Shooter 3D assets'
+          git commit -m 'Add game and modular sci-fi map 3D assets'
           git push
