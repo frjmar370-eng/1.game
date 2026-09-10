@@ -1,0 +1,89 @@
+name: Import real 3D assets
+
+on:
+  push:
+    paths:
+      - '.github/workflows/import-real-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-assets:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download verified CC0 packs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/assets
+          curl -L --fail --retry 3 -o /tmp/assets/scifi.zip https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip
+          curl -L --fail --retry 3 -o /tmp/assets/blaster.zip https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip
+          curl -L --fail --retry 3 -o /tmp/assets/survival.zip https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip
+          curl -L --fail --retry 3 -o /tmp/assets/nature.zip https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip
+
+      - name: Extract GLB and textures
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/extracted
+          mkdir -p /tmp/extracted/scifi /tmp/extracted/blaster /tmp/extracted/survival /tmp/extracted/nature
+          unzip -q /tmp/assets/scifi.zip -d /tmp/extracted/scifi
+          unzip -q /tmp/assets/blaster.zip -d /tmp/extracted/blaster
+          unzip -q /tmp/assets/survival.zip -d /tmp/extracted/survival
+          unzip -q /tmp/assets/nature.zip -d /tmp/extracted/nature
+
+          rm -rf Assets/Art/Models/RealPacks
+          mkdir -p Assets/Art/Models/RealPacks/SciFiEssentials
+          mkdir -p Assets/Art/Models/RealPacks/KenneyBlaster
+          mkdir -p Assets/Art/Models/RealPacks/KenneySurvival
+          mkdir -p Assets/Art/Models/RealPacks/KenneyNature
+
+          find /tmp/extracted/scifi -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/SciFiEssentials/ \;
+          find /tmp/extracted/blaster -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/KenneyBlaster/ \;
+          find /tmp/extracted/survival -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/KenneySurvival/ \;
+          find /tmp/extracted/nature -type f -iname '*.glb' -exec cp -f {} Assets/Art/Models/RealPacks/KenneyNature/ \;
+
+          find /tmp/extracted -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) -exec cp -n {} Assets/Art/Models/RealPacks/ \; || true
+
+          cat > Assets/Art/Models/REAL_ASSETS.md <<'EOF'
+# Real 3D assets
+
+These files are sourced from CC0 asset packs, not generated placeholder geometry.
+
+- Quaternius Sci-Fi Essentials: 60+ models in the full pack; Standard source distributed through OpenGameArt includes models and is CC0.
+- Kenney Blaster Kit 2.1: 40 GLB models, CC0.
+- Kenney Survival Kit 2.0: GLB models and textures, CC0.
+- Kenney Nature Kit 2.1: GLB models, CC0.
+
+The project uses Unity glTFast 6.17.0 to import real GLB/glTF assets in Unity 2022.3.
+EOF
+
+      - name: Remove duplicate placeholder GLBs
+        shell: bash
+        run: |
+          rm -f Assets/Art/Models/Player/Player.glb
+          rm -f Assets/Art/Models/Weapons/Shotgun.glb
+          rm -f Assets/Art/Models/Environment/Crate.glb
+          rm -f Assets/Art/Models/Environment/Barrel.glb
+
+      - name: Commit real assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Assets/Art/Models Packages/manifest.json
+          if git diff --cached --quiet; then
+            echo 'No asset changes.'
+            exit 0
+          fi
+          git commit -m 'Import real CC0 GLB game assets'
+          git push
