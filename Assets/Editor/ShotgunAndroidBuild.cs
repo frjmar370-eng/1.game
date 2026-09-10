@@ -14,11 +14,19 @@ public static class ShotgunAndroidBuild
     {
         EnsureProjectSetup();
 
+        if (!File.Exists(ScenePath))
+            throw new BuildFailedException("Required scene was not created: " + ScenePath);
+
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
         EditorUserBuildSettings.buildAppBundle = false;
         EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
 
         Directory.CreateDirectory("Builds");
+        if (File.Exists(OutputPath))
+            File.Delete(OutputPath);
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
 
         BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
