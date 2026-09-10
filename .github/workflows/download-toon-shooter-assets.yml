@@ -24,6 +24,15 @@ env:
     crosshair-pack
     ui-pack-sci-fi
 
+  QUATERNIUS_PAGES: >-
+    https://quaternius.com/packs/scifiessentialskit.html
+    https://quaternius.com/packs/scifimodularguns.html
+    https://quaternius.com/packs/ultimatespacekit.html
+    https://quaternius.com/packs/zombieapocalypsekit.html
+    https://quaternius.com/packs/stylizednaturemegakit.html
+    https://quaternius.com/packs/modularscifimegakit.html
+    https://quaternius.com/packs/scifigun.html
+
 jobs:
   download-assets:
     runs-on: ubuntu-latest
@@ -37,21 +46,47 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check gdown
           sudo apt-get update -qq
-          sudo apt-get install -y -qq unzip curl
+          sudo apt-get install -y -qq unzip curl grep sed
 
-      - name: Download Quaternius 3D game pack
+      - name: Download Quaternius Toon Shooter Game Kit
         run: |
           rm -rf /tmp/toon-shooter-assets
           mkdir -p /tmp/toon-shooter-assets
           gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets
 
-      - name: Download Quaternius modular sci-fi map pack
+      - name: Download Quaternius Ultimate Modular Sci-Fi Pack map
         run: |
           rm -rf /tmp/modular-sci-fi-assets
           mkdir -p /tmp/modular-sci-fi-assets
           gdown --folder 'https://drive.google.com/drive/folders/1zpr6HxVa-sCV93IHubN3A1d8HhF2wGbM?usp=sharing' -O /tmp/modular-sci-fi-assets
 
-      - name: Download official Kenney audio, VFX and UI packs
+      - name: Download additional Quaternius packs
+        run: |
+          set -e
+          mkdir -p /tmp/quaternius
+          for page in $QUATERNIUS_PAGES; do
+            name=$(basename "$page" .html)
+            echo "Downloading Quaternius pack: $name"
+            html=$(curl -fsSL --retry 3 --retry-delay 2 "$page")
+            url=$(printf '%s' "$html" | grep -Eo 'https?[^"'"' ]+\.(zip|ZIP)' | head -n 1 || true)
+            if [ -z "$url" ]; then
+              url=$(printf '%s' "$html" | grep -Eo 'href=["'"'][^"'"']+["'"']' | sed -E 's/^href=["'"']|["'"']$//g' | grep -Ei '(download|\.zip)' | head -n 1 || true)
+              case "$url" in
+                /*) url="https://quaternius.com$url" ;;
+                http*) ;;
+                *) url="https://quaternius.com/$url" ;;
+              esac
+            fi
+            if [ -z "$url" ]; then
+              echo "ERROR: Could not locate free download URL for $page"
+              exit 1
+            fi
+            curl -fL --retry 3 --retry-delay 2 "$url" -o "/tmp/quaternius/$name.zip"
+            mkdir -p "/tmp/quaternius/$name"
+            unzip -q -o "/tmp/quaternius/$name.zip" -d "/tmp/quaternius/$name"
+          done
+
+      - name: Download official Kenney audio VFX and UI packs
         run: |
           set -e
           mkdir -p /tmp/kenney
@@ -62,37 +97,44 @@ jobs:
             unzip -q -o "/tmp/kenney/${pack}.zip" -d "/tmp/kenney/${pack}"
           done
 
-      - name: Install all downloaded resources
+      - name: Install all resources into Unity project
         run: |
           set -e
           mkdir -p Assets/Art/Models/Quaternius/ToonShooter
           mkdir -p Assets/Art/Models/Quaternius/Map/UltimateModularSciFi
+          mkdir -p Assets/Art/Models/Quaternius/Additional
           mkdir -p Assets/Art/Audio/Kenney
           mkdir -p Assets/Art/VFX/Kenney
           mkdir -p Assets/Art/UI/Kenney
 
-          find /tmp/toon-shooter-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
+          find /tmp/toon-shooter-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.blend' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
             rel="${f#/tmp/toon-shooter-assets/}"
             dest="Assets/Art/Models/Quaternius/ToonShooter/$rel"
             mkdir -p "$(dirname "$dest")"
             cp "$f" "$dest"
           done
 
-          find /tmp/modular-sci-fi-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
+          find /tmp/modular-sci-fi-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.blend' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
             rel="${f#/tmp/modular-sci-fi-assets/}"
             dest="Assets/Art/Models/Quaternius/Map/UltimateModularSciFi/$rel"
             mkdir -p "$(dirname "$dest")"
             cp "$f" "$dest"
           done
 
+          for name in $(printf '%s\n' $QUATERNIUS_PAGES | sed -E 's#.*/([^/]+)\.html#\1#'); do
+            find "/tmp/quaternius/$name" -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.blend' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' -o -iname '*.anim' \) -print0 | while IFS= read -r -d '' f; do
+              rel="${f#/tmp/quaternius/$name/}"
+              dest="Assets/Art/Models/Quaternius/Additional/$name/$rel"
+              mkdir -p "$(dirname "$dest")"
+              cp "$f" "$dest"
+            done
+          done
+
           for pack in $KENNEY_PACKS; do
             case "$pack" in
-              interface-sounds|impact-sounds|digital-audio|rpg-audio|sci-fi-sounds|music-jingles|ui-audio)
-                destroot="Assets/Art/Audio/Kenney/$pack" ;;
-              particle-pack|smoke-particles|splat-pack)
-                destroot="Assets/Art/VFX/Kenney/$pack" ;;
-              crosshair-pack|ui-pack-sci-fi)
-                destroot="Assets/Art/UI/Kenney/$pack" ;;
+              interface-sounds|impact-sounds|digital-audio|rpg-audio|sci-fi-sounds|music-jingles|ui-audio) destroot="Assets/Art/Audio/Kenney/$pack" ;;
+              particle-pack|smoke-particles|splat-pack) destroot="Assets/Art/VFX/Kenney/$pack" ;;
+              crosshair-pack|ui-pack-sci-fi) destroot="Assets/Art/UI/Kenney/$pack" ;;
             esac
             mkdir -p "$destroot"
             find "/tmp/kenney/$pack" -type f \( -iname '*.wav' -o -iname '*.ogg' -o -iname '*.mp3' -o -iname '*.flac' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.svg' -o -iname '*.json' -o -iname '*.txt' -o -iname '*.ttf' -o -iname '*.otf' \) -print0 | while IFS= read -r -d '' f; do
@@ -103,10 +145,10 @@ jobs:
             done
           done
 
-          model_count=$(find Assets/Art/Models/Quaternius -type f | wc -l)
-          audio_count=$(find Assets/Art/Audio/Kenney -type f | wc -l)
-          vfx_count=$(find Assets/Art/VFX/Kenney -type f | wc -l)
-          ui_count=$(find Assets/Art/UI/Kenney -type f | wc -l)
+          model_count=$(find Assets/Art/Models -type f | wc -l)
+          audio_count=$(find Assets/Art/Audio -type f | wc -l)
+          vfx_count=$(find Assets/Art/VFX -type f | wc -l)
+          ui_count=$(find Assets/Art/UI -type f | wc -l)
           echo "3D files: $model_count"
           echo "Audio files: $audio_count"
           echo "VFX files: $vfx_count"
@@ -125,5 +167,5 @@ jobs:
             echo 'No new asset files to commit.'
             exit 0
           fi
-          git commit -m 'Add game models audio VFX and UI resources'
+          git commit -m 'Add expanded characters animations vehicles nature space and weapons'
           git push
