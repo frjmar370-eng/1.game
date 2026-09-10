@@ -16,7 +16,21 @@ public class EnemyVariants : MonoBehaviour
     void Start(){
         if(!ai) ai=GetComponent<TargetDummy>();
         if(!ai) return;
-        if(type==EnemyType.Runner){ ai.health=2; ai.moveSpeed=2.4f; ai.damageToPlayer=6; ai.attackInterval=1.8f; ai.attackDistance=2.1f; transform.localScale=baseScale*.85f; }
-        else if(type==EnemyType.Tank){ ai.health=8; ai.moveSpeed=.65f; ai.damageToPlayer=15; ai.attackInterval=3.0f; ai.attackDistance=2.7f; transform.localScale=baseScale*1.35f; }
+        if(type==EnemyType.Runner){
+            ai.health=Mathf.Max(1,Mathf.RoundToInt(ai.health*.65f));
+            ai.moveSpeed*=1.9f;
+            ai.damageToPlayer=Mathf.Max(1,Mathf.RoundToInt(ai.damageToPlayer*.75f));
+            ai.attackInterval*=.72f;
+            ai.attackDistance=2.1f;
+            transform.localScale=baseScale*.85f;
+        }
+        else if(type==EnemyType.Tank){
+            ai.health=Mathf.Max(1,Mathf.RoundToInt(ai.health*2.4f));
+            ai.moveSpeed*=.55f;
+            ai.damageToPlayer=Mathf.Max(1,Mathf.RoundToInt(ai.damageToPlayer*1.7f));
+            ai.attackInterval*=1.2f;
+            ai.attackDistance=2.7f;
+            transform.localScale=baseScale*1.35f;
+        }
     }
-} 
+}
