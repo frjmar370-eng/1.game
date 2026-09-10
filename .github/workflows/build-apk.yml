@@ -11,6 +11,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Prepare Unity Hub path
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unityhub desktop-file-utils
+          sudo mkdir -p /opt/unityhub
+          sudo ln -sf /usr/bin/unityhub /opt/unityhub/unityhub
+          test -x /opt/unityhub/unityhub
+
       - name: Setup Unity 2022.3 + Android
         uses: buildalon/unity-setup@v2
         with:
