@@ -1,7 +1,6 @@
 #if UNITY_EDITOR
 using System.IO;
 using UnityEditor;
-using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -15,7 +14,7 @@ public static class ShotgunAndroidBuild
     public static void BuildAPK()
     {
         EnsureProjectSetup();
-        ShotgunArtInstaller.InstallAndPrepare();
+        Real3DProjectPipeline.BuildComplete();
 
         if (!File.Exists(ScenePath))
             throw new BuildFailedException("Required scene is missing: " + ScenePath);
@@ -25,8 +24,7 @@ public static class ShotgunAndroidBuild
         EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
 
         Directory.CreateDirectory("Builds");
-        if (File.Exists(OutputPath))
-            File.Delete(OutputPath);
+        if (File.Exists(OutputPath)) File.Delete(OutputPath);
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
@@ -41,7 +39,6 @@ public static class ShotgunAndroidBuild
 
         if (report.summary.result != BuildResult.Succeeded)
             throw new BuildFailedException($"Android build failed with result {report.summary.result}. See the Unity build log for the first error.");
-
         if (!File.Exists(OutputPath) || new FileInfo(OutputPath).Length == 0)
             throw new BuildFailedException("Unity reported success but the APK was not created at " + OutputPath);
 
@@ -50,18 +47,11 @@ public static class ShotgunAndroidBuild
 
     private static void EnsureProjectSetup()
     {
-        if (!File.Exists(ScenePath))
-            ShotgunProjectSetup.Setup();
-
-        EditorBuildSettings.scenes = new[]
-        {
-            new EditorBuildSettingsScene(ScenePath, true)
-        };
-
+        if (!File.Exists(ScenePath)) ShotgunProjectSetup.Setup();
+        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
         PlayerSettings.productName = "Shotgun 3D";
         PlayerSettings.companyName = "Frjmar";
         PlayerSettings.applicationIdentifier = "com.ammar.game";
-
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
@@ -71,10 +61,7 @@ public static class ShotgunAndroidBuild
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)35;
-
-        // Keep OpenGLES3 while the rendering issue is being diagnosed.
         PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.OpenGLES3 });
-
         AssetDatabase.SaveAssets();
     }
 }
