@@ -29,17 +29,19 @@ public class SceneBootstrap : MonoBehaviour
         GameFlow flow=FindObjectOfType<GameFlow>();
         if(flow==null){GameObject flowObject=new GameObject("Game Flow");flow=flowObject.AddComponent<GameFlow>();}
         flow.BeginGame();
+        Canvas hudCanvas=GameObject.Find("HUD Canvas")?.GetComponent<Canvas>();
+        if(hudCanvas){if(MissionSystem.Instance)MissionSystem.Instance.Build(hudCanvas);if(ObjectiveSystem.Instance)ObjectiveSystem.Instance.Build(hudCanvas);}
     }
 
     void BuildPlayer(){
         if(FindObjectOfType<ShotgunGame>()!=null)return;
         GameObject player=new GameObject("Player");player.transform.position=new Vector3(0,0,-8f);
-        CharacterController cc=player.AddComponent<CharacterController>();cc.height=1.8f;cc.radius=.35f;cc.center=new Vector3(0,.9f,0);
+        CharacterController cc=player.AddComponent<CharacterController>();cc.height=1.8f;cc.radius=.35f;cc.center=new Vector3(0,.9f,0);cc.stepOffset=.35f;cc.slopeLimit=50f;cc.skinWidth=.04f;cc.minMoveDistance=.001f;
         GameObject visualPrefab=ArtAssetResolver.Player();
         if(visualPrefab){GameObject visual=Instantiate(visualPrefab,player.transform);visual.name="Player Visual";visual.transform.localPosition=Vector3.zero;visual.transform.localRotation=Quaternion.identity;NormalizeVisual(visual,1.8f);}
-        Camera cam=new GameObject("Third Person Camera").AddComponent<Camera>();cam.tag="MainCamera";cam.fieldOfView=68;cam.nearClipPlane=.05f;
+        Camera cam=new GameObject("Third Person Camera").AddComponent<Camera>();cam.tag="MainCamera";cam.fieldOfView=68;cam.nearClipPlane=.05f;cam.farClipPlane=90f;
         ShotgunGame game=player.AddComponent<ShotgunGame>();game.playerCamera=cam;game.thirdPerson=true;
-        ShotgunWeaponView weapon=player.AddComponent<ShotgunWeaponView>();weapon.playerCamera=cam;weapon.thirdPerson=true;
+        player.AddComponent<ShotgunWeaponView>().playerCamera=cam;GetComponent<ShotgunWeaponView>();
     }
 
     void BuildHUD(){
