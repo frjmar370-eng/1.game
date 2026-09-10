@@ -1,0 +1,55 @@
+name: Import CC0 3D Asset Packs
+
+on:
+  workflow_dispatch:
+    inputs:
+      packs:
+        description: 'Packs to import: blaster, survival, nature, or all'
+        required: true
+        default: 'all'
+
+permissions:
+  contents: write
+
+jobs:
+  import-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and extract selected Kenney packs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Assets/Art/External/Kenney
+          choice='${{ inputs.packs }}'
+          fetch() {
+            name="$1"; url="$2"
+            tmp="/tmp/${name}.zip"
+            echo "Downloading ${name}..."
+            curl -L --fail --retry 3 --retry-all-errors -o "$tmp" "$url"
+            mkdir -p "Assets/Art/External/Kenney/${name}"
+            unzip -q -o "$tmp" -d "Assets/Art/External/Kenney/${name}"
+          }
+          if [[ "$choice" == "blaster" || "$choice" == "all" ]]; then
+            fetch blaster 'https://kenney.nl/media/pages/assets/blaster-kit/261d80a716-1753959510/kenney_blaster-kit_2.1.zip'
+          fi
+          if [[ "$choice" == "survival" || "$choice" == "all" ]]; then
+            fetch survival 'https://kenney.nl/media/pages/assets/survival-kit/4065a8185b-1712149243/kenney_survival-kit.zip'
+          fi
+          if [[ "$choice" == "nature" || "$choice" == "all" ]]; then
+            fetch nature 'https://kenney.nl/media/pages/assets/nature-kit/37ac38a37b-1677698939/kenney_nature-kit.zip'
+          fi
+          find Assets/Art/External/Kenney -type f | sort | head -100
+      - name: Commit imported assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Assets/Art/External/Kenney
+          if git diff --cached --quiet; then
+            echo 'No new assets to commit.'
+            exit 0
+          fi
+          git commit -m 'Import verified Kenney CC0 asset packs'
+          git push
