@@ -8,6 +8,38 @@ public class BossSystem : MonoBehaviour
     TargetDummy boss;
     void Awake(){if(Instance!=null&&Instance!=this){Destroy(gameObject);return;}Instance=this;}
     public void SpawnBoss(Vector3 position,int wave){if(Active)return;StartCoroutine(Spawn(position,wave));}
-    IEnumerator Spawn(Vector3 position,int wave){yield return null;GameObject o=GameObject.CreatePrimitive(PrimitiveType.Capsule);o.name="BOSS";o.transform.position=position;o.transform.localScale=new Vector3(1.8f,2.4f,1.8f);boss=o.AddComponent<TargetDummy>();boss.health=30+wave*5;boss.moveSpeed=.9f;boss.damageToPlayer=22;boss.attackInterval=2f;boss.attackDistance=3f;boss.chaseDistance=40f;o.AddComponent<EnemyVariants>().type=EnemyType.Tank;Active=true;}
+    IEnumerator Spawn(Vector3 position,int wave)
+    {
+        yield return null;
+        GameObject root=new GameObject("BOSS");
+        root.transform.position=position;
+        root.transform.localScale=new Vector3(1.8f,2.4f,1.8f);
+
+        GameObject visual=ArtAssetResolver.Enemy();
+        if(visual!=null){
+            GameObject v=Instantiate(visual,root.transform);
+            v.name="Boss_Real_Model";
+            v.transform.localPosition=Vector3.zero;
+            v.transform.localRotation=Quaternion.identity;
+            v.transform.localScale=Vector3.one*.9f;
+        }else{
+            GameObject body=GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            body.name="Boss_Fallback_Visual";
+            body.transform.SetParent(root.transform,false);
+            body.transform.localPosition=Vector3.zero;
+            body.transform.localScale=Vector3.one;
+        }
+
+        boss=root.AddComponent<TargetDummy>();
+        boss.health=30+wave*5;
+        boss.moveSpeed=.9f;
+        boss.damageToPlayer=22;
+        boss.attackInterval=2f;
+        boss.attackDistance=3f;
+        boss.chaseDistance=40f;
+        EnemyVariants variant=root.AddComponent<EnemyVariants>();
+        variant.type=EnemyType.Tank;
+        Active=true;
+    }
     public void NotifyDeath(TargetDummy dead){if(dead!=boss)return;Active=false;}
 }
