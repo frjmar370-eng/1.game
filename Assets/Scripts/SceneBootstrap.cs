@@ -113,7 +113,19 @@ public class SceneBootstrap : MonoBehaviour
     Text CreateLabel(Transform parent, string value, Vector2 anchor, int size) { GameObject obj = new GameObject("UI " + value); obj.transform.SetParent(parent, false); RectTransform rect = obj.AddComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = anchor; rect.sizeDelta = new Vector2(800, 100); Text text = obj.AddComponent<Text>(); text.text = value; text.font = Resources.GetBuiltinResource<Font>("Arial.ttf"); text.fontSize = size; text.alignment = TextAnchor.MiddleCenter; text.color = Color.white; return text; }
     Image CreatePanel(Transform parent, Color color) { GameObject obj = new GameObject("Background"); obj.transform.SetParent(parent, false); Image image = obj.AddComponent<Image>(); image.color = color; return image; }
     Button CreateButton(Transform parent, string label, Vector2 anchor, float width, float height) { GameObject obj = new GameObject("Button " + label); obj.transform.SetParent(parent, false); RectTransform rect = obj.AddComponent<RectTransform>(); rect.anchorMin = rect.anchorMax = anchor; rect.sizeDelta = new Vector2(width, height); Image image = obj.AddComponent<Image>(); image.color = new Color(.12f, .14f, .18f, 1f); Button button = obj.AddComponent<Button>(); Text text = CreateLabel(obj.transform, label, new Vector2(.5f, .5f), 38); text.fontStyle = FontStyle.Bold; return button; }
-    Material MakeMaterial(Color color) { Material m = new Material(Shader.Find("Standard")); m.color = color; return m; }
+    Material MakeMaterial(Color color)
+    {
+        Shader shader = Shader.Find("Standard");
+        if (shader == null) shader = Shader.Find("Unlit/Color");
+        if (shader == null)
+        {
+            Debug.LogError("No compatible built-in shader was found for runtime materials.");
+            return null;
+        }
+        Material m = new Material(shader);
+        m.color = color;
+        return m;
+    }
     void BuildLighting() { RenderSettings.ambientIntensity = 1f; GameObject o = new GameObject("Key Light"); Light l = o.AddComponent<Light>(); l.type = LightType.Directional; l.intensity = 1.25f; l.transform.rotation = Quaternion.Euler(45, -30, 0); }
     GameObject CreatePrimitive(PrimitiveType type, string name, Vector3 position, Vector3 scale, Material material) { GameObject obj = GameObject.CreatePrimitive(type); obj.name = name; obj.transform.position = position; obj.transform.localScale = scale; if (material != null) obj.GetComponent<Renderer>().material = material; return obj; }
 }
