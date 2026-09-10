@@ -62,7 +62,7 @@ public class SceneBootstrap : MonoBehaviour
         GameFlow flow=FindObjectOfType<GameFlow>(); if(flow!=null) { flow.roundText=round; flow.messageText=message; }
     }
 
-    void BuildFlow(){ new GameObject("Game Flow").AddComponent<GameFlow>(); }
+    void BuildFlow(){ if(FindObjectOfType<GameFlow>()==null) new GameObject("Game Flow").AddComponent<GameFlow>(); }
     Text CreateLabel(Transform parent,string value,Vector2 anchor,int size){ GameObject obj=new GameObject("UI "+value); obj.transform.SetParent(parent,false); RectTransform rect=obj.AddComponent<RectTransform>(); rect.anchorMin=rect.anchorMax=anchor; rect.sizeDelta=new Vector2(600,70); Text text=obj.AddComponent<Text>(); text.text=value; text.font=Resources.GetBuiltinResource<Font>("Arial.ttf"); text.fontSize=size; text.alignment=TextAnchor.MiddleCenter; text.color=Color.white; return text; }
     Material MakeMaterial(Color color){ Material m=new Material(Shader.Find("Standard")); m.color=color; return m; }
     void BuildLighting(){ RenderSettings.ambientIntensity=1f; GameObject o=new GameObject("Key Light"); Light l=o.AddComponent<Light>(); l.type=LightType.Directional; l.intensity=1.25f; l.transform.rotation=Quaternion.Euler(45,-30,0); }
