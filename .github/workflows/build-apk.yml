@@ -11,14 +11,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare Unity Hub path
+      # Unity Hub is not part of the Ubuntu runner repositories by default.
+      # Install it from Unity's official APT repository before Buildalon uses it.
+      - name: Install Unity Hub
         shell: bash
         run: |
+          set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y unityhub desktop-file-utils
+          sudo apt-get install -y curl gnupg ca-certificates desktop-file-utils
+          sudo install -d -m 0755 /etc/apt/keyrings
+          curl -fsSL https://hub.unity3d.com/linux/keys/public | sudo gpg --dearmor --yes -o /etc/apt/keyrings/unityhub.gpg
+          echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/unityhub.gpg] https://hub.unity3d.com/linux/repos/deb stable main" | sudo tee /etc/apt/sources.list.d/unityhub.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y unityhub
+          command -v unityhub
           sudo mkdir -p /opt/unityhub
-          sudo ln -sf /usr/bin/unityhub /opt/unityhub/unityhub
+          sudo ln -sfn "$(command -v unityhub)" /opt/unityhub/unityhub
           test -x /opt/unityhub/unityhub
+          /opt/unityhub/unityhub --version || true
 
       - name: Setup Unity 2022.3 + Android
         uses: buildalon/unity-setup@v2
@@ -26,6 +36,7 @@ jobs:
           version-file: ProjectSettings/ProjectVersion.txt
           unity-version: 2022.3.62f2
           build-targets: Android
+          auto-update-hub: false
 
       - name: Activate Unity Personal License
         uses: buildalon/activate-unity-license@v2
@@ -41,6 +52,13 @@ jobs:
           build-target: Android
           project-path: .
           args: -quit -nographics -batchmode -executeMethod ShotgunAndroidBuild.BuildAPK
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s Builds/Shotgun3D.apk
+          ls -lh Builds/Shotgun3D.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
