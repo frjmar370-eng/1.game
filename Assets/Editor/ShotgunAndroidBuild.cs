@@ -8,6 +8,9 @@ public static class ShotgunAndroidBuild
     [MenuItem("Shotgun 3D/Build Android APK")]
     public static void BuildAPK()
     {
+        if (!System.IO.File.Exists("Assets/Scenes/Main.unity"))
+            ShotgunProjectSetup.Setup();
+
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
         EditorUserBuildSettings.buildAppBundle = false;
         string output = "Builds/Shotgun3D.apk";
