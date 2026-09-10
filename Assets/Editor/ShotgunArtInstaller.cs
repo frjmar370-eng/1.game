@@ -12,6 +12,8 @@ public static class ShotgunArtInstaller
     private const string ArtRoot = "Assets/Art/Imported";
     private const string ResourcesRoot = "Assets/Resources";
     private const string GunZipUrl = "https://opengameart.org/sites/default/files/ultimate_gun_pack_by_quaternius.zip";
+    private const string SciFiModelsZipUrl = "https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip";
+    private const string SciFiTexturesZipUrl = "https://opengameart.org/sites/default/files/sci-fi_essentials_kit_textures.zip";
     private const string ApiBase = "https://api.polyhaven.com/files/";
 
     [MenuItem("Shotgun 3D/Art/Install CC0 Art")]
@@ -23,6 +25,8 @@ public static class ShotgunArtInstaller
         Directory.CreateDirectory(ResourcesRoot);
 
         DownloadAndExtract("QuaterniusGuns", GunZipUrl);
+        DownloadAndExtract("SciFiEssentialsModels", SciFiModelsZipUrl);
+        DownloadAndExtract("SciFiEssentialsTextures", SciFiTexturesZipUrl);
         InstallPolyHaven("barrel_01", "Barrel_01");
         InstallPolyHaven("wooden_military_crate", "MilitaryCrate");
 
@@ -30,23 +34,21 @@ public static class ShotgunArtInstaller
         CreatePrefabFromModel("shotgun", "Assets/Art/Imported/QuaterniusGuns", "Assets/Resources/Weapons/Shotgun.prefab");
         CreatePrefabFromModel("barrel", "Assets/Art/Imported/Barrel_01", "Assets/Resources/Environment/Barrel.prefab");
         CreatePrefabFromModel("crate", "Assets/Art/Imported/MilitaryCrate", "Assets/Resources/Environment/Crate.prefab");
+        CreatePrefabFromModel("robot", "Assets/Art/Imported/SciFiEssentialsModels", "Assets/Resources/Characters/Player.prefab");
+        CreatePrefabFromModel("robot", "Assets/Art/Imported/SciFiEssentialsModels", "Assets/Resources/Characters/Enemy.prefab");
+        CreatePrefabFromModel("screen", "Assets/Art/Imported/SciFiEssentialsModels", "Assets/Resources/Environment/Screen.prefab");
+        CreatePrefabFromModel("door", "Assets/Art/Imported/SciFiEssentialsModels", "Assets/Resources/Environment/Door.prefab");
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
     }
 
     private static void InstallPolyHaven(string slug, string folderName)
     {
-        string json = DownloadText(ApiBase + slug, "Shotgun3D-AssetInstaller/1.0");
+        string json = DownloadText(ApiBase + slug, "Shotgun3D-AssetInstaller/2.0");
         if (string.IsNullOrEmpty(json)) return;
-
         string url = ExtractUrlNear(json, "\"1k\"");
         if (string.IsNullOrEmpty(url)) url = ExtractZipUrl(json);
-        if (string.IsNullOrEmpty(url))
-        {
-            Debug.LogWarning("ShotgunArtInstaller: no ZIP URL found for " + slug);
-            return;
-        }
-        DownloadAndExtract(folderName, url);
+        if (!string.IsNullOrEmpty(url)) DownloadAndExtract(folderName, url);
     }
 
     private static string ExtractUrlNear(string json, string marker)
@@ -85,14 +87,13 @@ public static class ShotgunArtInstaller
         string targetDir = Path.Combine(ArtRoot, folderName).Replace('\\', '/');
         string marker = Path.Combine(targetDir, ".installed");
         if (File.Exists(marker)) return;
-
         Directory.CreateDirectory(targetDir);
         string tempZip = Path.Combine(Path.GetTempPath(), "shotgun3d_" + folderName + ".zip");
         try
         {
             using (WebClient client = new WebClient())
             {
-                client.Headers[HttpRequestHeader.UserAgent] = "Shotgun3D-AssetInstaller/1.0";
+                client.Headers[HttpRequestHeader.UserAgent] = "Shotgun3D-AssetInstaller/2.0";
                 Debug.Log("ShotgunArtInstaller: downloading " + folderName);
                 client.DownloadFile(url, tempZip);
             }
@@ -112,29 +113,17 @@ public static class ShotgunArtInstaller
     private static void CreatePrefabFromModel(string keyword, string searchFolder, string prefabPath)
     {
         if (File.Exists(prefabPath)) return;
-
         string directory = Path.GetDirectoryName(prefabPath)?.Replace('\\', '/');
         if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-
         string[] guids = AssetDatabase.FindAssets("t:Model", new[] { searchFolder });
         string selected = null;
         foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
             string file = Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
-            if (file.Contains(keyword.ToLowerInvariant()))
-            {
-                selected = path;
-                break;
-            }
+            if (file.Contains(keyword.ToLowerInvariant())) { selected = path; break; }
         }
-
-        if (selected == null)
-        {
-            Debug.LogWarning("ShotgunArtInstaller: model not found for keyword " + keyword + " in " + searchFolder);
-            return;
-        }
-
+        if (selected == null) return;
         GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(selected);
         if (source == null) return;
         GameObject instance = PrefabUtility.InstantiatePrefab(source) as GameObject;
@@ -142,7 +131,6 @@ public static class ShotgunArtInstaller
         instance.name = Path.GetFileNameWithoutExtension(prefabPath);
         try { PrefabUtility.SaveAsPrefabAsset(instance, prefabPath); }
         finally { UnityEngine.Object.DestroyImmediate(instance); }
-        Debug.Log("ShotgunArtInstaller: created " + prefabPath + " from " + selected);
     }
 }
 #endif
