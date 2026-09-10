@@ -2,25 +2,43 @@ using UnityEngine;
 
 public static class ArtAssetResolver
 {
-    public static GameObject Player()=>LoadFirst("RealPacks/Characters/Player","Characters/Player","Characters/Soldier","RealPacks/SciFiEssentials/Character","Player");
-    public static GameObject Enemy()=>LoadByKeywords(new[]{"enemy","robot","alien","zombie","character"},"RealPacks/Characters");
-    public static GameObject Shotgun()=>LoadByKeywords(new[]{"shotgun","blaster","rifle","gun","weapon"},"RealPacks/Weapons");
-    public static GameObject Crate()=>LoadByKeywords(new[]{"crate","box","container"},"RealPacks/Environment");
-    public static GameObject Barrel()=>LoadByKeywords(new[]{"barrel","drum"},"RealPacks/Environment");
+    static GameObject Load(string path)=>Resources.Load<GameObject>(path);
+
+    public static GameObject Player()=>First(
+        "RealPacks/Characters/Player",
+        "RealPacks/Characters/PlayerCharacter",
+        "Characters/Player");
+
+    public static GameObject Enemy()=>First(
+        "RealPacks/Characters/Enemy",
+        "RealPacks/Characters/EnemyCharacter",
+        "Characters/Enemy");
+
+    public static GameObject Shotgun()=>First(
+        "RealPacks/Weapons/Shotgun",
+        "RealPacks/Weapons/Weapon",
+        "Weapons/Shotgun");
+
+    public static GameObject Crate()=>First(
+        "RealPacks/Environment/Crate",
+        "RealPacks/Environment/Container",
+        "Environment/Crate");
+
+    public static GameObject Barrel()=>First(
+        "RealPacks/Environment/Barrel",
+        "RealPacks/Environment/Drum",
+        "Environment/Barrel");
 
     public static GameObject RandomReal(string folder)
     {
+        // Kept for compatibility, but only returns an asset when explicitly requested.
         Object[] assets=Resources.LoadAll(folder,typeof(GameObject));
-        return assets!=null&&assets.Length>0?assets[Random.Range(0,assets.Length)] as GameObject:null;
+        return assets!=null&&assets.Length>0?assets[0] as GameObject:null;
     }
 
-    static GameObject LoadFirst(params string[] paths){foreach(string p in paths){GameObject g=Resources.Load<GameObject>(p);if(g!=null)return g;}return null;}
-
-    static GameObject LoadByKeywords(string[] keys,string folder)
+    static GameObject First(params string[] paths)
     {
-        Object[] assets=Resources.LoadAll(folder,typeof(GameObject));
-        if(assets==null||assets.Length==0)return null;
-        foreach(Object a in assets){string n=a.name.ToLowerInvariant();foreach(string k in keys)if(n.Contains(k))return a as GameObject;}
-        return assets[Random.Range(0,assets.Length)] as GameObject;
+        foreach(string path in paths){GameObject g=Load(path);if(g!=null)return g;}
+        return null;
     }
 }
