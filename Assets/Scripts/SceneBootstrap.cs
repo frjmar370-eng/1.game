@@ -75,8 +75,48 @@ public class SceneBootstrap : MonoBehaviour
 
     void BuildProps()
     {
-        for (int i = 0; i < 8; i++) { float x = -9f + (i % 4) * 6f, z = -1f + (i / 4) * 8f; GameObject c = CreatePrimitive(PrimitiveType.Cube, "Crate_" + i, new Vector3(x, .65f, z), new Vector3(1.4f, 1.3f, 1.4f), wallMaterial); c.transform.Rotate(0, (i * 17f) % 45f, 0); }
-        for (int i = 0; i < 4; i++) CreatePrimitive(PrimitiveType.Cylinder, "Barrel_" + i, new Vector3(-8f + i * 5f, 1f, 9f), new Vector3(.8f, 1f, .8f), wallMaterial);
+        GameObject cratePrefab = Resources.Load<GameObject>("Environment/Crate");
+        GameObject barrelPrefab = Resources.Load<GameObject>("Environment/Barrel");
+
+        for (int i = 0; i < 8; i++)
+        {
+            float x = -9f + (i % 4) * 6f;
+            float z = -1f + (i / 4) * 8f;
+            Vector3 pos = new Vector3(x, .65f, z);
+            GameObject c = cratePrefab != null
+                ? SpawnArt(cratePrefab, "Crate_" + i, pos, new Vector3(1.35f, 1.35f, 1.35f))
+                : CreatePrimitive(PrimitiveType.Cube, "Crate_" + i, pos, new Vector3(1.4f, 1.3f, 1.4f), wallMaterial);
+            c.transform.Rotate(0, (i * 17f) % 45f, 0);
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 pos = new Vector3(-8f + i * 5f, 1f, 9f);
+            if (barrelPrefab != null)
+                SpawnArt(barrelPrefab, "Barrel_" + i, pos, new Vector3(1.05f, 1.05f, 1.05f));
+            else
+                CreatePrimitive(PrimitiveType.Cylinder, "Barrel_" + i, pos, new Vector3(.8f, 1f, .8f), wallMaterial);
+        }
+    }
+
+    GameObject SpawnArt(GameObject prefab, string name, Vector3 position, Vector3 scale)
+    {
+        GameObject obj = Instantiate(prefab, position, Quaternion.identity);
+        obj.name = name;
+        obj.transform.localScale = scale;
+        if (obj.GetComponentInChildren<Collider>() == null)
+        {
+            BoxCollider collider = obj.AddComponent<BoxCollider>();
+            Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                Bounds bounds = renderers[0].bounds;
+                foreach (Renderer r in renderers) bounds.Encapsulate(r.bounds);
+                collider.center = obj.transform.InverseTransformPoint(bounds.center);
+                collider.size = bounds.size;
+            }
+        }
+        return obj;
     }
 
     void BuildTargets()
