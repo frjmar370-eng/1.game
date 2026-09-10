@@ -19,7 +19,7 @@ public static class ShotgunProjectSetup
         PlayerSettings.productName = "Shotgun 3D";
         PlayerSettings.companyName = "Frjmar";
         PlayerSettings.applicationIdentifier = "com.frjmar.shotgun3d";
-        PlayerSettings.defaultScreenOrientation = ScreenOrientation.LandscapeLeft;
+        PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
         PlayerSettings.allowedAutorotateToPortrait = false;
         PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
