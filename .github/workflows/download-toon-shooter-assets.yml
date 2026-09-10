@@ -1,0 +1,50 @@
+name: Download 3D Game Assets
+
+on:
+  push:
+    paths:
+      - '.github/workflows/download-toon-shooter-assets.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  download-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Quaternius Toon Shooter Game Kit
+        run: |
+          python -m pip install --disable-pip-version-check gdown
+          rm -rf /tmp/toon-shooter-assets
+          mkdir -p /tmp/toon-shooter-assets
+          gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets --remaining-ok
+
+      - name: Install models into Unity project
+        run: |
+          mkdir -p Assets/Art/Models/Quaternius
+          find /tmp/toon-shooter-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' \) -print0 | while IFS= read -r -d '' f; do
+            rel="${f#/tmp/toon-shooter-assets/}"
+            dest="Assets/Art/Models/Quaternius/$rel"
+            mkdir -p "$(dirname "$dest")"
+            cp "$f" "$dest"
+          done
+          echo "Installed model files:"
+          find Assets/Art/Models/Quaternius -type f | sort | head -200
+
+      - name: Commit downloaded assets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Assets/Art/Models/Quaternius
+          if git diff --cached --quiet; then
+            echo 'No new asset files to commit.'
+            exit 0
+          fi
+          git commit -m 'Add Quaternius Toon Shooter 3D assets'
+          git push
