@@ -4,41 +4,16 @@ public static class ArtAssetResolver
 {
     static GameObject Load(string path)=>Resources.Load<GameObject>(path);
 
-    public static GameObject Player()=>First(
-        "RealPacks/Characters/Player",
-        "RealPacks/Characters/PlayerCharacter",
-        "Characters/Player");
+    public static GameObject Player()=>First("RealPacks/Characters/Player","RealPacks/Characters/PlayerCharacter","Characters/Player");
+    public static GameObject Enemy()=>First("RealPacks/Characters/Enemy","RealPacks/Characters/EnemyCharacter","Characters/Enemy");
+    public static GameObject Shotgun()=>First("RealPacks/Weapons/Shotgun","Weapons/Shotgun");
+    public static GameObject Rifle()=>First("RealPacks/Weapons/Rifle","Weapons/Rifle");
+    public static GameObject Pistol()=>First("RealPacks/Weapons/Pistol","Weapons/Pistol");
+    public static GameObject Crate()=>First("RealPacks/Environment/Crate","RealPacks/Environment/Container","Environment/Crate");
+    public static GameObject Barrel()=>First("RealPacks/Environment/Barrel","RealPacks/Environment/Drum","Environment/Barrel");
 
-    public static GameObject Enemy()=>First(
-        "RealPacks/Characters/Enemy",
-        "RealPacks/Characters/EnemyCharacter",
-        "Characters/Enemy");
+    // Compatibility API: deliberately deterministic; never selects an arbitrary asset.
+    public static GameObject RandomReal(string folder)=>null;
 
-    public static GameObject Shotgun()=>First(
-        "RealPacks/Weapons/Shotgun",
-        "RealPacks/Weapons/Weapon",
-        "Weapons/Shotgun");
-
-    public static GameObject Crate()=>First(
-        "RealPacks/Environment/Crate",
-        "RealPacks/Environment/Container",
-        "Environment/Crate");
-
-    public static GameObject Barrel()=>First(
-        "RealPacks/Environment/Barrel",
-        "RealPacks/Environment/Drum",
-        "Environment/Barrel");
-
-    public static GameObject RandomReal(string folder)
-    {
-        // Kept for compatibility, but only returns an asset when explicitly requested.
-        Object[] assets=Resources.LoadAll(folder,typeof(GameObject));
-        return assets!=null&&assets.Length>0?assets[0] as GameObject:null;
-    }
-
-    static GameObject First(params string[] paths)
-    {
-        foreach(string path in paths){GameObject g=Load(path);if(g!=null)return g;}
-        return null;
-    }
+    static GameObject First(params string[] paths){foreach(string path in paths){GameObject g=Load(path);if(g!=null)return g;}return null;}
 }
