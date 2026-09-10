@@ -1,10 +1,12 @@
 name: Download Game Resources
 
 on:
-  push:
-    paths:
-      - '.github/workflows/download-toon-shooter-assets.yml'
   workflow_dispatch:
+
+# Never allow two asset-download jobs to modify the repository at the same time.
+concurrency:
+  group: game-resource-downloader-main
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -50,6 +52,7 @@ env:
 jobs:
   download-assets:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,28 +66,51 @@ jobs:
           sudo apt-get install -y -qq unzip curl grep sed
 
       - name: Download Quaternius Toon Shooter Game Kit
+        timeout-minutes: 20
         run: |
-          rm -rf /tmp/toon-shooter-assets
+          set -e
           mkdir -p /tmp/toon-shooter-assets
-          gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets
+          if find /tmp/toon-shooter-assets -type f -print -quit | grep -q .; then
+            echo 'Toon Shooter temp download already exists; keeping it.'
+          else
+            gdown --folder 'https://drive.google.com/drive/folders/1-BDs_EIyd6uiF2XuoyiZEcqnMQIJrE0C?usp=sharing' -O /tmp/toon-shooter-assets
+          fi
+          test "$(find /tmp/toon-shooter-assets -type f | wc -l)" -gt 0
 
       - name: Download Quaternius Ultimate Modular Sci-Fi Pack map
+        timeout-minutes: 20
         run: |
-          rm -rf /tmp/modular-sci-fi-assets
+          set -e
           mkdir -p /tmp/modular-sci-fi-assets
-          gdown --folder 'https://drive.google.com/drive/folders/1zpr6HxVa-sCV93IHubN3A1d8HhF2wGbM?usp=sharing' -O /tmp/modular-sci-fi-assets
+          if find /tmp/modular-sci-fi-assets -type f -print -quit | grep -q .; then
+            echo 'Ultimate Modular Sci-Fi temp download already exists; keeping it.'
+          else
+            gdown --folder 'https://drive.google.com/drive/folders/1zpr6HxVa-sCV93IHubN3A1d8HhF2wGbM?usp=sharing' -O /tmp/modular-sci-fi-assets
+          fi
+          test "$(find /tmp/modular-sci-fi-assets -type f | wc -l)" -gt 0
 
       - name: Download additional Quaternius packs
+        timeout-minutes: 35
         run: |
           set -e
           mkdir -p /tmp/quaternius
           for page in $QUATERNIUS_PAGES; do
             name=$(basename "$page" .html)
+            dir="/tmp/quaternius/$name"
+            zip="/tmp/quaternius/$name.zip"
+            mkdir -p "$dir"
+
+            # A completed pack is never downloaded again during this run.
+            if find "$dir" -type f -print -quit | grep -q .; then
+              echo "Already extracted: $name"
+              continue
+            fi
+
             echo "Downloading Quaternius pack: $name"
-            html=$(curl -fsSL --retry 3 --retry-delay 2 "$page")
-            url=$(printf '%s' "$html" | grep -Eo 'https?[^"'"' ]+\.(zip|ZIP)' | head -n 1 || true)
+            html=$(curl -fsSL --retry 4 --retry-delay 3 --connect-timeout 20 --max-time 120 "$page")
+            url=$(printf '%s' "$html" | grep -Eo 'https?[^\"'"'"' ]+\.(zip|ZIP)' | head -n 1 || true)
             if [ -z "$url" ]; then
-              url=$(printf '%s' "$html" | grep -Eo 'href=["'"'][^"'"']+["'"']' | sed -E 's/^href=["'"']|["'"']$//g' | grep -Ei '(download|\.zip)' | head -n 1 || true)
+              url=$(printf '%s' "$html" | grep -Eo 'href=[\"'"'"'][^\"'"'"']+[\"'"'"']' | sed -E 's/^href=[\"'"'"']|[\"'"'"']$//g' | grep -Ei '(download|\.zip)' | head -n 1 || true)
               case "$url" in
                 /*) url="https://quaternius.com$url" ;;
                 http*) ;;
@@ -95,20 +121,34 @@ jobs:
               echo "ERROR: Could not locate free download URL for $page"
               exit 1
             fi
-            curl -fL --retry 3 --retry-delay 2 "$url" -o "/tmp/quaternius/$name.zip"
-            mkdir -p "/tmp/quaternius/$name"
-            unzip -q -o "/tmp/quaternius/$name.zip" -d "/tmp/quaternius/$name"
+
+            rm -f "$zip"
+            curl -fL --retry 4 --retry-delay 3 --connect-timeout 20 --max-time 900 "$url" -o "$zip"
+            test -s "$zip"
+            unzip -q -o "$zip" -d "$dir"
+            test "$(find "$dir" -type f | wc -l)" -gt 0
           done
 
       - name: Download official Kenney audio VFX and UI packs
+        timeout-minutes: 25
         run: |
           set -e
           mkdir -p /tmp/kenney
           for pack in $KENNEY_PACKS; do
+            dir="/tmp/kenney/$pack"
+            zip="/tmp/kenney/$pack.zip"
+            mkdir -p "$dir"
+
+            if find "$dir" -type f -print -quit | grep -q .; then
+              echo "Already extracted: $pack"
+              continue
+            fi
+
             echo "Downloading Kenney pack: $pack"
-            curl -fL --retry 3 --retry-delay 2 "https://kenney.nl/assets/${pack}/download" -o "/tmp/kenney/${pack}.zip"
-            mkdir -p "/tmp/kenney/${pack}"
-            unzip -q -o "/tmp/kenney/${pack}.zip" -d "/tmp/kenney/${pack}"
+            curl -fL --retry 4 --retry-delay 3 --connect-timeout 20 --max-time 600 "https://kenney.nl/assets/${pack}/download" -o "$zip"
+            test -s "$zip"
+            unzip -q -o "$zip" -d "$dir"
+            test "$(find "$dir" -type f | wc -l)" -gt 0
           done
 
       - name: Install all resources into Unity project
@@ -125,14 +165,14 @@ jobs:
             rel="${f#/tmp/toon-shooter-assets/}"
             dest="Assets/Art/Models/Quaternius/ToonShooter/$rel"
             mkdir -p "$(dirname "$dest")"
-            cp "$f" "$dest"
+            cp -f "$f" "$dest"
           done
 
           find /tmp/modular-sci-fi-assets -type f \( -iname '*.glb' -o -iname '*.gltf' -o -iname '*.fbx' -o -iname '*.obj' -o -iname '*.blend' -o -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.tga' \) -print0 | while IFS= read -r -d '' f; do
             rel="${f#/tmp/modular-sci-fi-assets/}"
             dest="Assets/Art/Models/Quaternius/Map/UltimateModularSciFi/$rel"
             mkdir -p "$(dirname "$dest")"
-            cp "$f" "$dest"
+            cp -f "$f" "$dest"
           done
 
           for name in $(printf '%s\n' $QUATERNIUS_PAGES | sed -E 's#.*/([^/]+)\.html#\1#'); do
@@ -140,7 +180,7 @@ jobs:
               rel="${f#/tmp/quaternius/$name/}"
               dest="Assets/Art/Models/Quaternius/Additional/$name/$rel"
               mkdir -p "$(dirname "$dest")"
-              cp "$f" "$dest"
+              cp -f "$f" "$dest"
             done
           done
 
@@ -155,7 +195,7 @@ jobs:
               rel="${f#/tmp/kenney/$pack/}"
               dest="$destroot/$rel"
               mkdir -p "$(dirname "$dest")"
-              cp "$f" "$dest"
+              cp -f "$f" "$dest"
             done
           done
 
@@ -174,6 +214,7 @@ jobs:
 
       - name: Commit downloaded resources
         run: |
+          set -e
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add Assets/Art
@@ -181,5 +222,5 @@ jobs:
             echo 'No new asset files to commit.'
             exit 0
           fi
-          git commit -m 'Add expanded characters animations vehicles nature space and weapons'
+          git commit -m 'Add expanded game resources'
           git push
