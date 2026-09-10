@@ -25,11 +25,14 @@ public class SceneBootstrap : MonoBehaviour
         if(gameStarted)return;gameStarted=true;
         GameObject menu=GameObject.Find("Start Screen Canvas");if(menu)Destroy(menu);
         BuildPlayer();
-        GameObject flowObject=new GameObject("Game Flow");flowObject.AddComponent<GameFlow>();
         BuildHUD();
+        GameFlow flow=FindObjectOfType<GameFlow>();
+        if(flow==null){GameObject flowObject=new GameObject("Game Flow");flow=flowObject.AddComponent<GameFlow>();}
+        flow.BeginGame();
     }
 
     void BuildPlayer(){
+        if(FindObjectOfType<ShotgunGame>()!=null)return;
         GameObject player=new GameObject("Player");player.transform.position=new Vector3(0,0,-8f);
         CharacterController cc=player.AddComponent<CharacterController>();cc.height=1.8f;cc.radius=.35f;cc.center=new Vector3(0,.9f,0);
         GameObject visualPrefab=ArtAssetResolver.Player();
@@ -40,6 +43,7 @@ public class SceneBootstrap : MonoBehaviour
     }
 
     void BuildHUD(){
+        if(GameObject.Find("HUD Canvas")!=null)return;
         GameObject canvasObj=new GameObject("HUD Canvas");Canvas canvas=canvasObj.AddComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;
         CanvasScaler scaler=canvasObj.AddComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1920,1080);canvasObj.AddComponent<GraphicRaycaster>();
         Text ammo=CreateLabel(canvas.transform,"AMMO  6/6",new Vector2(.5f,.92f),34);Text score=CreateLabel(canvas.transform,"SCORE  0",new Vector2(.5f,.98f),30);Text hp=CreateLabel(canvas.transform,"HP  100",new Vector2(.08f,.94f),30);Text round=CreateLabel(canvas.transform,"ROUND  1",new Vector2(.5f,.86f),24);Text message=CreateLabel(canvas.transform,"",new Vector2(.5f,.70f),38);CreateLabel(canvas.transform,"+",new Vector2(.5f,.5f),32);
