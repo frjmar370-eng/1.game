@@ -25,12 +25,10 @@ public static class ShotgunAndroidBuild
         EditorUserBuildSettings.exportAsGoogleAndroidProject=false;
         Directory.CreateDirectory("Builds");
 
-        // Convert imported real 3D prefabs into the platform-specific runtime bundle.
         RuntimeAssetBundleBuilder.Build(BuildTarget.Android);
         if(!File.Exists("Builds/Content/Android/shotgun3d-content")) throw new BuildFailedException("Runtime AssetBundle is missing.");
         if(!File.Exists(BundleManifestPath)) throw new BuildFailedException("Runtime AssetBundle manifest is missing: "+BundleManifestPath);
 
-        // Remove source prefabs from Resources so they cannot be embedded in the APK.
         RuntimeAssetBundleBuilder.RemoveEmbeddedRuntimePrefabs();
 
         if(File.Exists(OutputPath)) File.Delete(OutputPath);
@@ -65,7 +63,6 @@ public static class ShotgunAndroidBuild
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android,ScriptingImplementation.IL2CPP);
         PlayerSettings.Android.targetSdkVersion=(AndroidSdkVersions)35;
         PlayerSettings.SetGraphicsAPIs(BuildTarget.Android,new[]{GraphicsDeviceType.OpenGLES3});
-        PlayerSettings.forceInternetPermission=true;
         AssetDatabase.SaveAssets();
     }
 }
