@@ -14,11 +14,40 @@ jobs:
   build:
     name: Build Android APK
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Cache downloaded 3D packs
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: Assets/Art/Downloads
+          key: Shotgun3D-packs-v3
+
+      - name: Download real 3D packs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Assets/Art/Downloads
+          download() {
+            local url="$1"
+            local out="$2"
+            if [ -s "$out" ] && [ "$(stat -c%s "$out")" -gt 1048576 ]; then
+              echo "Using cached $out ($(du -h "$out" | cut -f1))"
+              return
+            fi
+            rm -f "$out"
+            echo "Downloading $out"
+            curl -fL --retry 5 --retry-all-errors --connect-timeout 30 --max-time 900 "$url" -o "$out"
+            test -s "$out"
+            test "$(stat -c%s "$out")" -gt 1048576
+          }
+          download "https://opengameart.org/sites/default/files/modular_scifi_megakitstandard.zip" "Assets/Art/Downloads/modular_scifi_megakitstandard.zip"
+          download "https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip" "Assets/Art/Downloads/sci-fi_essentials_kit_models.zip"
+          download "https://opengameart.org/sites/default/files/sci-fi_essentials_kit_textures.zip" "Assets/Art/Downloads/sci-fi_essentials_kit_textures.zip"
+          ls -lh Assets/Art/Downloads
 
       - name: Cache Unity Library
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -28,10 +57,6 @@ jobs:
           restore-keys: |
             Library-Android-
 
-      # GameCI runs Unity from a prepared Docker image instead of installing
-      # Unity Hub on the GitHub runner. This avoids the /opt/unityhub/unityhub
-      # installation failure seen with the previous Buildalon setup step.
-      # Unity Personal still needs a one-time UNITY_LICENSE (.ulf) secret.
       - name: Build Unity project
         uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4
         env:
