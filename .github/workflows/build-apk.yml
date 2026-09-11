@@ -1,4 +1,4 @@
-name: Build Shotgun 3D APK
+name: Build Shotgun 3D City APK
 
 on:
   workflow_dispatch:
@@ -8,94 +8,54 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Android City Test
     runs-on: ubuntu-22.04
     timeout-minutes: 120
-
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - name: Verify source and scene
+      - name: Verify city source
         shell: bash
         run: |
           set -euo pipefail
-          echo "SOURCE_SHA=$(git rev-parse HEAD)"
           test -f Assets/Scenes/Main.unity
           test -f Assets/Scripts/SceneBootstrap.cs
-          test -f Assets/Scripts/RuntimeContentDownloader.cs
-          test -f Assets/Scripts/RuntimeAssetBundleStore.cs
-          test -f Assets/Editor/RuntimeAssetBundleBuilder.cs
-          grep -q "Scene Bootstrap" Assets/Scenes/Main.unity
-          grep -q "SHOTGUN 3D" Assets/Scripts/SceneBootstrap.cs
-          grep -q "StartGame" Assets/Scripts/SceneBootstrap.cs
+          test -f Assets/Scripts/CityTestMap.cs
+          grep -q "CITY TEST MAP" Assets/Scripts/SceneBootstrap.cs
+          grep -q "MobileHUD.Build" Assets/Scripts/SceneBootstrap.cs
+          grep -q "BuildBuildings" Assets/Scripts/CityTestMap.cs
+          grep -q "BuildRoadNetwork" Assets/Scripts/CityTestMap.cs
+          grep -q "BuildPlayerStart" Assets/Scripts/CityTestMap.cs
           grep -q "Assets/Scenes/Main.unity" ProjectSettings/EditorBuildSettings.asset
-          grep -q "SHOTGUN_CONTENT_READY_VERSION" Assets/Scripts/RuntimeContentDownloader.cs
-          grep -q "RuntimeAssetBundleBuilder.Build" Assets/Editor/ShotgunAndroidBuild.cs
-          grep -q "assetBundleManifestPath" Assets/Editor/ShotgunAndroidBuild.cs
           grep -q "AndroidTargetArchitectures: 2" ProjectSettings/ProjectSettings.asset
           grep -q "ForceInternetPermission: 1" ProjectSettings/ProjectSettings.asset
-          grep -q "unitywebrequestassetbundle" Packages/manifest.json
 
-      - name: Stamp APK with commit SHA
+      - name: Stamp build
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import os
-          import re
+          import os,re
           p=Path('Assets/Scripts/BuildStamp.cs')
           s=p.read_text(encoding='utf-8')
-          sha=os.environ['GITHUB_SHA'][:12]
-          s=re.sub(r'public const string Version = "[^"]*";', f'public const string Version = "BUILD {sha}";', s)
+          s=re.sub(r'public const string Version = "[^"]*";',f'public const string Version = "CITY BUILD {os.environ["GITHUB_SHA"][:12]}";',s)
           p.write_text(s,encoding='utf-8')
-          print('Build stamp:', sha)
           PY
-          grep -q "BUILD ${GITHUB_SHA:0:12}" Assets/Scripts/BuildStamp.cs
-
-      - name: Cache downloaded 3D packs
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: Assets/Art/Downloads
-          key: Shotgun3D-packs-v3
-
-      - name: Download real 3D packs
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p Assets/Art/Downloads
-          download() {
-            local url="$1"
-            local out="$2"
-            if [ -s "$out" ] && [ "$(stat -c%s "$out")" -gt 1048576 ]; then
-              echo "Using cached $out ($(du -h "$out" | cut -f1))"
-              return
-            fi
-            rm -f "$out"
-            echo "Downloading $out"
-            curl -fL --retry 5 --retry-all-errors --connect-timeout 30 --max-time 900 "$url" -o "$out"
-            test -s "$out"
-            test "$(stat -c%s "$out")" -gt 1048576
-          }
-          download "https://opengameart.org/sites/default/files/modular_scifi_megakitstandard.zip" "Assets/Art/Downloads/modular_scifi_megakitstandard.zip"
-          download "https://opengameart.org/sites/default/files/sci-fi_essentials_kit_models.zip" "Assets/Art/Downloads/sci-fi_essentials_kit_models.zip"
-          download "https://opengameart.org/sites/default/files/sci-fi_essentials_kit_textures.zip" "Assets/Art/Downloads/sci-fi_essentials_kit_textures.zip"
-          ls -lh Assets/Art/Downloads
 
       - name: Cache Unity Library
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: Library
-          key: Library-Android-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
-          restore-keys: |
-            Library-Android-
+          key: Library-Android-City-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-Android-City-
 
-      - name: Build Unity project
+      - name: Build APK
         uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -109,43 +69,17 @@ jobs:
           allowDirtyBuild: true
           customParameters: -quit -nographics -batchmode
 
-      - name: Verify APK and runtime content bundle
+      - name: Verify APK
         shell: bash
         run: |
           set -euo pipefail
           test -s Builds/Shotgun3D.apk
-          test -s Builds/Content/Android/shotgun3d-content
-          test -s Builds/Content/Android.manifest
-          test ! -e Assets/Resources/RealPacks/Characters/Player.prefab
-          size=$(stat -c%s Builds/Shotgun3D.apk)
-          bundle_size=$(stat -c%s Builds/Content/Android/shotgun3d-content)
-          test "$size" -gt 5000000
-          test "$bundle_size" -gt 100000
-          echo "APK_SIZE=$size"
-          echo "CONTENT_BUNDLE_SIZE=$bundle_size"
-          ls -lh Builds/Shotgun3D.apk Builds/Content/Android/shotgun3d-content Builds/Content/Android.manifest
-
-      - name: Publish runtime content release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="content-${GITHUB_SHA:0:12}"
-          gh release create "$tag" \
-            "Builds/Content/Android/shotgun3d-content" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "Shotgun 3D content ${GITHUB_SHA:0:12}" \
-            --notes "Android runtime 3D content for build ${GITHUB_SHA}." \
-            --latest=false
-          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/shotgun3d-content"
-          curl -fL --retry 3 --connect-timeout 20 --max-time 120 -o /dev/null "$url"
-          echo "CONTENT_URL=$url"
+          test "$(stat -c%s Builds/Shotgun3D.apk)" -gt 5000000
+          ls -lh Builds/Shotgun3D.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: Shotgun3D-APK
+          name: Shotgun3D-City-APK
           path: Builds/Shotgun3D.apk
           if-no-files-found: error
