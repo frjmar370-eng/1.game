@@ -78,8 +78,8 @@ public class RuntimeContentDownloader : MonoBehaviour
                     long bytes = existing + (long)req.downloadedBytes;
                     float seconds = Mathf.Max(.1f, Time.realtimeSinceStartup - started);
                     float bps = bytes / seconds;
-                    float total = GetTotal(req, existing);
-                    float progress = total > 0 ? bytes / total : 0f;
+                    long total = GetTotal(req, existing);
+                    float progress = total > 0 ? (float)bytes / total : 0f;
                     Set(progress, resume ? "استئناف تنزيل المحتوى..." : "تنزيل المحتوى...", bytes, total, bps);
                     yield return null;
                 }
@@ -158,11 +158,11 @@ public class RuntimeContentDownloader : MonoBehaviour
         Complete(finished);
     }
 
-    static float GetTotal(UnityWebRequest req, long existing)
+    static long GetTotal(UnityWebRequest req, long existing)
     {
         string length = req.GetResponseHeader("Content-Length");
         if (long.TryParse(length, out long n)) return n + (req.responseCode == 206 ? existing : 0);
-        return 0;
+        return 0L;
     }
 
     void MarkReady()
