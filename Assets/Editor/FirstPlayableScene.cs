@@ -11,33 +11,49 @@ public static class FirstPlayableScene
 {
     const string ScenePath="Assets/Scenes/Main.unity";
     static FirstPlayableScene(){ EditorApplication.delayCall += EnsureScene; }
+
     [MenuItem("Shotgun 3D/Build First Playable Scene")]
-    public static void EnsureScene(){
-        if(!Application.isBatchMode && File.Exists(ScenePath)) return;
-        if(!AssetExists("Assets/Art/Environment/CityKit.obj") || !AssetExists("Assets/Art/Characters/Hero.obj")) { EditorApplication.delayCall += EnsureScene; return; }
+    public static void EnsureScene(){ BuildScene(false); }
+
+    [MenuItem("Shotgun 3D/Rebuild Main Scene")]
+    public static void RebuildMainScene(){ BuildScene(true); }
+
+    static void BuildScene(bool force){
+        if(!force && !Application.isBatchMode && File.Exists(ScenePath)) return;
+        if(!AssetExists("Assets/Art/Environment/CityKit.obj") || !AssetExists("Assets/Art/Characters/Hero.obj")) return;
         Directory.CreateDirectory("Assets/Scenes");
+        var old=SceneManager.GetActiveScene();
+        if(force && old.IsValid() && old.path==ScenePath) EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
         var scene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
         RenderSettings.ambientMode=UnityEngine.Rendering.AmbientMode.Trilight;
         RenderSettings.ambientSkyColor=new Color(.25f,.30f,.38f);
         RenderSettings.ambientEquatorColor=new Color(.12f,.15f,.18f);
         RenderSettings.ambientGroundColor=new Color(.045f,.05f,.055f);
         RenderSettings.fog=true; RenderSettings.fogColor=new Color(.035f,.05f,.075f); RenderSettings.fogDensity=.0025f;
+
         var cityPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Environment/CityKit.obj");
-        var city=Object.Instantiate(cityPrefab); city.name="CITY_REAL_3D"; city.AddComponent<MeshCollider>();
+        var city=Object.Instantiate(cityPrefab); city.name="CITY_REAL_3D";
+        var mc=city.GetComponent<MeshCollider>() ?? city.AddComponent<MeshCollider>();
+        mc.convex=false;
+
         var heroPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/Hero.obj");
         var hero=Object.Instantiate(heroPrefab); hero.name="PLAYER_3D"; hero.transform.position=new Vector3(0,1f,-70); hero.transform.localScale=Vector3.one;
         var cc=hero.AddComponent<CharacterController>(); cc.height=3.8f; cc.radius=.55f; cc.center=new Vector3(0,1.9f,0); cc.stepOffset=.45f; cc.slopeLimit=48f;
         var controller=hero.AddComponent<ThirdPersonController>();
         var target=new GameObject("CameraTarget"); target.transform.SetParent(hero.transform); target.transform.localPosition=new Vector3(0,1.8f,0); controller.cameraTarget=target.transform;
+
         var camObj=new GameObject("Main Camera"); var cam=camObj.AddComponent<Camera>(); cam.tag="MainCamera"; cam.fieldOfView=62; cam.nearClipPlane=.1f; cam.farClipPlane=340; cam.allowHDR=true;
         var follow=camObj.AddComponent<ThirdPersonCamera>(); follow.target=hero.transform; camObj.transform.position=hero.transform.position+new Vector3(0,4,-7);
+
         var light=new GameObject("Sun"); var dl=light.AddComponent<Light>(); dl.type=LightType.Directional; dl.intensity=1.25f; dl.shadows=LightShadows.Soft; dl.shadowStrength=.85f; light.transform.rotation=Quaternion.Euler(48,-32,0);
         CreateHUD();
-        EditorSceneManager.SaveScene(scene,ScenePath); AssetDatabase.SaveAssets();
-        Debug.Log("SHOTGUN 3D: enhanced first playable city scene created.");
+        EditorSceneManager.SaveScene(scene,ScenePath); AssetDatabase.SaveAssets(); AssetDatabase.Refresh();
+        Debug.Log("SHOTGUN 3D: main playable city scene rebuilt.");
         if(Application.isBatchMode) EditorApplication.Exit(0);
     }
+
     static bool AssetExists(string p)=>File.Exists(p);
+
     static void CreateHUD(){
         var es=new GameObject("EventSystem"); es.AddComponent<EventSystem>(); es.AddComponent<StandaloneInputModule>();
         var c=new GameObject("HUD"); var canvas=c.AddComponent<Canvas>(); canvas.renderMode=RenderMode.ScreenSpaceOverlay; canvas.sortingOrder=20; var scaler=c.AddComponent<CanvasScaler>(); scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution=new Vector2(1920,1080); c.AddComponent<GraphicRaycaster>();
