@@ -9,6 +9,7 @@ public static class RuntimeAssetBundleBuilder
 {
     public const string OutputRoot = "Builds/Content/Android";
     public const string BundleName = "shotgun3d-content";
+    public const string PublishedManifestName = "Android.manifest";
 
     static readonly string[] Prefabs =
     {
@@ -27,10 +28,7 @@ public static class RuntimeAssetBundleBuilder
     };
 
     [MenuItem("Shotgun 3D/3D Assets/Build Android Runtime Content", priority = 30)]
-    public static void BuildAndroidContent()
-    {
-        Build(BuildTarget.Android);
-    }
+    public static void BuildAndroidContent() => Build(BuildTarget.Android);
 
     public static string Build(BuildTarget target)
     {
@@ -45,7 +43,7 @@ public static class RuntimeAssetBundleBuilder
             assets.Add(path);
         }
 
-        var map = new AssetBundleBuild
+        AssetBundleBuild map = new AssetBundleBuild
         {
             assetBundleName = BundleName,
             assetNames = assets.ToArray()
@@ -61,11 +59,38 @@ public static class RuntimeAssetBundleBuilder
             throw new BuildFailedException("Android runtime AssetBundle build returned null.");
 
         string bundlePath = Path.Combine(OutputRoot, BundleName);
+        string generatedManifest = Path.Combine(OutputRoot, BundleName + ".manifest");
+        string publishedManifest = Path.Combine(OutputRoot, PublishedManifestName);
+
         if (!File.Exists(bundlePath) || new FileInfo(bundlePath).Length == 0)
             throw new BuildFailedException("Runtime AssetBundle was not created: " + bundlePath);
+        if (!File.Exists(generatedManifest) || new FileInfo(generatedManifest).Length == 0)
+            throw new BuildFailedException("Runtime AssetBundle manifest was not created: " + generatedManifest);
 
+        File.Copy(generatedManifest, publishedManifest, true);
+        ValidateBundle(bundlePath);
         Debug.Log($"[RuntimeContent] Android bundle ready: {bundlePath} ({new FileInfo(bundlePath).Length} bytes)");
         return bundlePath;
+    }
+
+    static void ValidateBundle(string bundlePath)
+    {
+        using (AssetBundle bundle = AssetBundle.LoadFromFile(bundlePath))
+        {
+            if (bundle == null)
+                throw new BuildFailedException("Runtime AssetBundle cannot be opened after build.");
+            string[] names = bundle.GetAllAssetNames();
+            foreach (string required in new[] { "player", "enemy", "boss", "shotgun", "rifle", "pistol", "crate", "barrel", "floor", "wall", "door", "cover" })
+            {
+                bool found = false;
+                foreach (string assetName in names)
+                {
+                    string file = Path.GetFileNameWithoutExtension(assetName).ToLowerInvariant();
+                    if (file == required) { found = true; break; }
+                }
+                if (!found) throw new BuildFailedException("Runtime AssetBundle is missing prefab: " + required);
+            }
+        }
     }
 
     public static void RemoveEmbeddedRuntimePrefabs()
