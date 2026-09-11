@@ -8,7 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -28,12 +28,15 @@ jobs:
           test -f Assets/Scenes/Main.unity
           test -f Assets/Scripts/SceneBootstrap.cs
           test -f Assets/Scripts/RuntimeContentDownloader.cs
+          test -f Assets/Scripts/RuntimeAssetBundleStore.cs
+          test -f Assets/Editor/RuntimeAssetBundleBuilder.cs
           grep -q "Scene Bootstrap" Assets/Scenes/Main.unity
           grep -q "SHOTGUN 3D" Assets/Scripts/SceneBootstrap.cs
           grep -q "StartGame" Assets/Scripts/SceneBootstrap.cs
           grep -q "Assets/Scenes/Main.unity" ProjectSettings/EditorBuildSettings.asset
           grep -q "SHOTGUN_CONTENT_READY_VERSION" Assets/Scripts/RuntimeContentDownloader.cs
-          if grep -q "opengameart.org" Assets/Scripts/RuntimeContentDownloader.cs; then echo "Runtime downloader must not fetch raw source ZIPs"; exit 1; fi
+          grep -q "RuntimeAssetBundleBuilder.Build" Assets/Editor/ShotgunAndroidBuild.cs
+          grep -q "assetBundleManifestPath" Assets/Editor/ShotgunAndroidBuild.cs
           grep -q "AndroidTargetArchitectures: 2" ProjectSettings/ProjectSettings.asset
 
       - name: Stamp APK with commit SHA
@@ -104,15 +107,36 @@ jobs:
           allowDirtyBuild: true
           customParameters: -quit -nographics -batchmode
 
-      - name: Verify APK
+      - name: Verify APK and runtime content bundle
         shell: bash
         run: |
           set -euo pipefail
           test -s Builds/Shotgun3D.apk
+          test -s Builds/Content/Android/shotgun3d-content
+          test -s Builds/Content/Android.manifest
           size=$(stat -c%s Builds/Shotgun3D.apk)
+          bundle_size=$(stat -c%s Builds/Content/Android/shotgun3d-content)
           test "$size" -gt 5000000
+          test "$bundle_size" -gt 100000
           echo "APK_SIZE=$size"
-          ls -lh Builds/Shotgun3D.apk
+          echo "CONTENT_BUNDLE_SIZE=$bundle_size"
+          ls -lh Builds/Shotgun3D.apk Builds/Content/Android/shotgun3d-content
+
+      - name: Publish runtime content release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="content-${GITHUB_SHA:0:12}"
+          gh release create "$tag" \
+            "Builds/Content/Android/shotgun3d-content" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Shotgun 3D content ${GITHUB_SHA:0:12}" \
+            --notes "Android runtime 3D content for build ${GITHUB_SHA}." \
+            --latest=false
+          echo "CONTENT_RELEASE=$tag"
 
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
