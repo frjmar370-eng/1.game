@@ -10,44 +10,29 @@ public static class ShotgunAndroidBuild
 {
     private const string ScenePath="Assets/Scenes/Main.unity";
     private const string OutputPath="Builds/Shotgun3D.apk";
-    private const string BundleManifestPath="Builds/Content/Android.manifest";
 
     [MenuItem("Shotgun 3D/Build Android APK")]
     public static void BuildAPK()
     {
         EnsureProjectSetup();
-        Real3DAssetInstaller.InstallRecommendedPacks();
-        Real3DProjectPipeline.BuildComplete();
         if(!File.Exists(ScenePath)) throw new BuildFailedException("Required scene is missing: "+ScenePath);
-
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android,BuildTarget.Android);
         EditorUserBuildSettings.buildAppBundle=false;
         EditorUserBuildSettings.exportAsGoogleAndroidProject=false;
         Directory.CreateDirectory("Builds");
-
-        RuntimeAssetBundleBuilder.Build(BuildTarget.Android);
-        if(!File.Exists("Builds/Content/Android/shotgun3d-content")) throw new BuildFailedException("Runtime AssetBundle is missing.");
-        if(!File.Exists(BundleManifestPath)) throw new BuildFailedException("Runtime AssetBundle manifest is missing: "+BundleManifestPath);
-
-        RuntimeAssetBundleBuilder.RemoveEmbeddedRuntimePrefabs();
-
         if(File.Exists(OutputPath)) File.Delete(OutputPath);
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-
         BuildReport report=BuildPipeline.BuildPlayer(new BuildPlayerOptions{
-            scenes=new[]{ScenePath},
-            locationPathName=OutputPath,
-            target=BuildTarget.Android,
-            assetBundleManifestPath=BundleManifestPath,
-            options=BuildOptions.None
+            scenes=new[]{ScenePath},locationPathName=OutputPath,target=BuildTarget.Android,options=BuildOptions.None
         });
-        if(report.summary.result!=BuildResult.Succeeded) throw new BuildFailedException($"Android build failed with result {report.summary.result}. See the Unity build log for the first error.");
-        if(!File.Exists(OutputPath)||new FileInfo(OutputPath).Length==0) throw new BuildFailedException("Unity reported success but the APK was not created at "+OutputPath);
-        Debug.Log($"Shotgun 3D APK created: {OutputPath} ({new FileInfo(OutputPath).Length} bytes)");
+        if(report.summary.result!=BuildResult.Succeeded) throw new BuildFailedException($"Android build failed: {report.summary.result}");
+        if(!File.Exists(OutputPath)||new FileInfo(OutputPath).Length==0) throw new BuildFailedException("APK was not created: "+OutputPath);
+        Debug.Log($"Shotgun 3D CITY APK created: {OutputPath} ({new FileInfo(OutputPath).Length} bytes)");
     }
 
-    private static void EnsureProjectSetup(){
+    private static void EnsureProjectSetup()
+    {
         if(!File.Exists(ScenePath))ShotgunProjectSetup.Setup();
         EditorBuildSettings.scenes=new[]{new EditorBuildSettingsScene(ScenePath,true)};
         PlayerSettings.productName="Shotgun 3D";
