@@ -32,13 +32,14 @@ public static class BuildPreparation
         EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
 
         if (!File.Exists(ScenePath))
-            FirstPlayableScene.RebuildMainScene();
-        else
-            EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+        {
+            if (!FirstPlayableScene.BuildSceneForBuild())
+                throw new BuildFailedException("Could not create Assets/Scenes/Main.unity from the required 3D assets.");
+        }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("SHOTGUN 3D: Android build settings prepared. Use Shotgun 3D > FINAL BUILD > Build Android APK.");
+        Debug.Log("SHOTGUN 3D: Android build settings prepared and Main.unity verified.");
     }
 
     [MenuItem("Shotgun 3D/FINAL PREPARE/Validate Project")]
@@ -72,15 +73,13 @@ public static class FinalBuildMenu
     [MenuItem("Shotgun 3D/FINAL BUILD/Build Android APK")]
     public static void BuildAndroid()
     {
-        BuildPreparation.PrepareAndroid();
+        PrepareAndroid();
         string output = "Builds/Android/Shotgun3D.apk";
         Directory.CreateDirectory("Builds/Android");
         string scene = "Assets/Scenes/Main.unity";
         if (!File.Exists(scene))
-        {
-            Debug.LogError("Main.unity was not created. Open the project in Unity and run Rebuild Main Scene first.");
-            return;
-        }
+            throw new BuildFailedException("Main.unity was not created.");
+
         var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
         {
             scenes = new[] { scene },
@@ -89,6 +88,8 @@ public static class FinalBuildMenu
             options = BuildOptions.None
         });
         Debug.Log("SHOTGUN 3D BUILD RESULT: " + report.summary.result + " | errors=" + report.summary.totalErrors + " | warnings=" + report.summary.totalWarnings);
+        if (report.summary.result != BuildResult.Succeeded)
+            throw new BuildFailedException("Android build failed. See the Unity BuildPipeline errors above.");
     }
 }
 #endif
