@@ -5,9 +5,9 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
-// First-launch runtime content delivery. Unity imports the source FBX/ZIP files during CI,
-// converts them to an Android AssetBundle, publishes that bundle as a GitHub Release asset,
-// and the Android app downloads the ready-to-load bundle on first launch.
+// First-launch runtime content delivery. CI converts the imported real 3D assets into
+// an Android AssetBundle and publishes it as a GitHub Release asset. The Android app
+// downloads the ready-to-load bundle, validates it, caches it, then starts the game.
 public class RuntimeContentDownloader : MonoBehaviour
 {
     const string ReadyKey = "SHOTGUN_CONTENT_READY_VERSION";
@@ -16,12 +16,14 @@ public class RuntimeContentDownloader : MonoBehaviour
     Canvas canvas; Slider bar; Text detail, amount, speed, eta, status;
     bool running;
 
-    public static bool Ready => PlayerPrefs.GetString(ReadyKey, "") == BuildStamp.Version && RuntimeAssetBundleStore.LoadCached();
+    public static bool Ready => PlayerPrefs.GetString(ReadyKey, "") == BuildStamp.Version && RuntimeAssetBundleStore.HasRequiredContent();
+
     public static void ResetContentState()
     {
         PlayerPrefs.DeleteKey(ReadyKey);
         PlayerPrefs.Save();
-        DeleteLocalFiles();
+        RuntimeAssetBundleStore.Unload();
+        try { if (File.Exists(RuntimeAssetBundleStore.LocalPath)) File.Delete(RuntimeAssetBundleStore.LocalPath); } catch { }
     }
 
     static string BuildId => BuildStamp.Version.Replace("BUILD ", "").Trim().ToLowerInvariant();
@@ -42,20 +44,19 @@ public class RuntimeContentDownloader : MonoBehaviour
         string temp = path + ".part";
         Directory.CreateDirectory(Path.GetDirectoryName(path));
 
-        // Android keeps app data when an APK is updated. Never reuse a bundle from another build.
-        if (PlayerPrefs.GetString(ReadyKey, "") != BuildStamp.Version)
-        {
-            RuntimeAssetBundleStore.Unload();
-            DeleteLocalFiles();
-        }
-
-        if (RuntimeAssetBundleStore.LoadCached())
+        // A cached bundle is accepted only after validating every required prefab.
+        if (RuntimeAssetBundleStore.HasRequiredContent())
         {
             MarkReady();
+            Set(1f, "تم العثور على محتوى اللعبة المحفوظ");
+            amount.text = "المحتوى 100%";
+            speed.text = "من الذاكرة المحلية";
+            eta.text = "جاهز للتشغيل";
             Complete(finished);
             yield break;
         }
 
+        RuntimeAssetBundleStore.Unload();
         long existing = 0;
         try { if (File.Exists(temp)) existing = new FileInfo(temp).Length; } catch { existing = 0; }
         Set(0f, existing > 0 ? "استئناف تنزيل ملفات اللعبة..." : "تنزيل محتوى اللعبة لأول مرة...");
@@ -103,6 +104,12 @@ public class RuntimeContentDownloader : MonoBehaviour
                 }
                 else
                 {
+                    // A stale/invalid range must restart cleanly instead of looping forever.
+                    if (req.responseCode == 416)
+                    {
+                        existing = 0;
+                        try { File.Delete(temp); } catch { }
+                    }
                     status.text = "فشل الاتصال. إعادة المحاولة...";
                     yield return new WaitForSeconds(1f);
                     try { if (File.Exists(temp)) existing = new FileInfo(temp).Length; } catch { }
@@ -121,6 +128,7 @@ public class RuntimeContentDownloader : MonoBehaviour
         Set(1f, "التحقق من ملفات اللعبة...");
         try
         {
+            RuntimeAssetBundleStore.Unload();
             if (File.Exists(path)) File.Delete(path);
             File.Move(temp, path);
         }
@@ -132,22 +140,13 @@ public class RuntimeContentDownloader : MonoBehaviour
             yield break;
         }
 
-        if (!RuntimeAssetBundleStore.LoadCached())
-        {
-            running = false;
-            detail.text = "ملف المحتوى غير صالح";
-            status.text = "أعد المحاولة لتنزيل نسخة سليمة.";
-            DeleteLocalFiles();
-            yield break;
-        }
-
-        if (RuntimeAssetBundleStore.LoadPrefab("Player") == null || RuntimeAssetBundleStore.LoadPrefab("Enemy") == null || RuntimeAssetBundleStore.LoadPrefab("Shotgun") == null)
+        if (!RuntimeAssetBundleStore.HasRequiredContent())
         {
             RuntimeAssetBundleStore.Unload();
-            DeleteLocalFiles();
+            try { File.Delete(path); } catch { }
             running = false;
-            detail.text = "محتوى اللعبة غير مكتمل";
-            status.text = "أعد المحاولة لتنزيل الحزمة الصحيحة.";
+            detail.text = "ملف المحتوى غير صالح أو غير مكتمل";
+            status.text = "أعد المحاولة لتنزيل نسخة سليمة.";
             yield break;
         }
 
@@ -157,12 +156,6 @@ public class RuntimeContentDownloader : MonoBehaviour
         speed.text = "تم الحفظ على الجهاز";
         eta.text = "جاهز للتشغيل";
         Complete(finished);
-    }
-
-    static void DeleteLocalFiles()
-    {
-        try { if (File.Exists(RuntimeAssetBundleStore.LocalPath)) File.Delete(RuntimeAssetBundleStore.LocalPath); } catch { }
-        try { if (File.Exists(RuntimeAssetBundleStore.LocalPath + ".part")) File.Delete(RuntimeAssetBundleStore.LocalPath + ".part"); } catch { }
     }
 
     static float GetTotal(UnityWebRequest req, long existing)
