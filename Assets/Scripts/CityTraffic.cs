@@ -3,14 +3,10 @@ using UnityEngine;
 public class CityTraffic : MonoBehaviour
 {
     public float speed = 6f;
-    public float laneLength = 280f;
     public float despawnEdge = 142f;
     Vector3 axis;
 
-    void Start()
-    {
-        axis = transform.forward;
-    }
+    void Start(){ axis = transform.forward; }
 
     void Update()
     {
@@ -32,22 +28,17 @@ public static class CityTrafficBootstrap
     {
         GameObject prefab = Resources.Load<GameObject>("Car");
         if (!prefab) return;
-        GameObject root = new GameObject("CITY_TRAFFIC");
         float[] lanes = { -120f, -40f, 40f, 120f };
-        for (int i = 0; i < lanes.Length; i++)
+        for (int i=0;i<lanes.Length;i++)
         {
-            Spawn(prefab, new Vector3(lanes[i], .25f, -105f), Quaternion.Euler(0, 0, 0), 5.5f + i);
-            Spawn(prefab, new Vector3(-105f, .25f, lanes[i]), Quaternion.Euler(0, 90, 0), 5f + i);
+            Spawn(prefab,new Vector3(lanes[i],.25f,-105f),Quaternion.identity,5.5f+i);
+            Spawn(prefab,new Vector3(-105f,.25f,lanes[i]),Quaternion.Euler(0,90,0),5f+i);
         }
-        foreach (Transform t in root.transform)
-            t.gameObject.layer = 0;
     }
-
-    static void Spawn(GameObject prefab, Vector3 pos, Quaternion rot, float speed)
+    static void Spawn(GameObject prefab,Vector3 pos,Quaternion rot,float speed)
     {
-        GameObject car = Object.Instantiate(prefab, pos, rot);
-        car.name = "TrafficCar";
-        CityTraffic traffic = car.AddComponent<CityTraffic>();
-        traffic.speed = speed;
+        GameObject car=Object.Instantiate(prefab,pos,rot);
+        car.name="TrafficCar";
+        car.AddComponent<CityTraffic>().speed=speed;
     }
 }
