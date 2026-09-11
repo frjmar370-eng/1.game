@@ -9,7 +9,6 @@ public static class RuntimeAssetBundleBuilder
 {
     public const string OutputRoot = "Builds/Content/Android";
     public const string BundleName = "shotgun3d-content";
-    public const string PublishedManifestName = "Android.manifest";
 
     static readonly string[] Prefabs =
     {
@@ -59,15 +58,16 @@ public static class RuntimeAssetBundleBuilder
             throw new BuildFailedException("Android runtime AssetBundle build returned null.");
 
         string bundlePath = Path.Combine(OutputRoot, BundleName);
-        string generatedManifest = Path.Combine(OutputRoot, BundleName + ".manifest");
-        string publishedManifest = Path.Combine(OutputRoot, PublishedManifestName);
+        string bundleManifestPath = Path.Combine(OutputRoot, BundleName + ".manifest");
+        string rootManifestPath = OutputRoot + ".manifest";
 
         if (!File.Exists(bundlePath) || new FileInfo(bundlePath).Length == 0)
             throw new BuildFailedException("Runtime AssetBundle was not created: " + bundlePath);
-        if (!File.Exists(generatedManifest) || new FileInfo(generatedManifest).Length == 0)
-            throw new BuildFailedException("Runtime AssetBundle manifest was not created: " + generatedManifest);
+        if (!File.Exists(bundleManifestPath) || new FileInfo(bundleManifestPath).Length == 0)
+            throw new BuildFailedException("Runtime AssetBundle manifest was not created: " + bundleManifestPath);
+        if (!File.Exists(rootManifestPath) || new FileInfo(rootManifestPath).Length == 0)
+            throw new BuildFailedException("Runtime root AssetBundle manifest was not created: " + rootManifestPath);
 
-        File.Copy(generatedManifest, publishedManifest, true);
         ValidateBundle(bundlePath);
         Debug.Log($"[RuntimeContent] Android bundle ready: {bundlePath} ({new FileInfo(bundlePath).Length} bytes)");
         return bundlePath;
