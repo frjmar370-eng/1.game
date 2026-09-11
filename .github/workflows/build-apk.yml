@@ -20,6 +20,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
+      - name: Verify source and scene
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SOURCE_SHA=$(git rev-parse HEAD)"
+          test -f Assets/Scenes/Main.unity
+          test -f Assets/Scripts/SceneBootstrap.cs
+          grep -q "Scene Bootstrap" Assets/Scenes/Main.unity
+          grep -q "SHOTGUN 3D" Assets/Scripts/SceneBootstrap.cs
+          grep -q "StartGame" Assets/Scripts/SceneBootstrap.cs
+          grep -q "Assets/Scenes/Main.unity" ProjectSettings/EditorBuildSettings.asset
+
+      - name: Stamp APK with commit SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          p=Path('Assets/Scripts/BuildStamp.cs')
+          s=p.read_text(encoding='utf-8')
+          sha=os.environ['GITHUB_SHA'][:12]
+          import re
+          s=re.sub(r'public const string Version = "[^"]*";', f'public const string Version = "BUILD {sha}";', s)
+          p.write_text(s,encoding='utf-8')
+          print('Build stamp:', sha)
+          PY
+
       - name: Cache downloaded 3D packs
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
