@@ -27,11 +27,11 @@ public static class RuntimeAssetBundleStore
     public static GameObject LoadPrefab(string name)
     {
         if (bundle == null && !LoadCached()) return null;
-        string wanted = name.EndsWith(".prefab") ? name : name + ".prefab";
+        string wanted = (name.EndsWith(".prefab") ? name : name + ".prefab").ToLowerInvariant();
         foreach (string assetName in bundle.GetAllAssetNames())
         {
-            string normalized = assetName.Replace('\\', '/');
-            if (normalized.EndsWith("/" + wanted.ToLowerInvariant()))
+            string normalized = assetName.Replace('\\', '/').ToLowerInvariant();
+            if (normalized.EndsWith("/" + wanted))
                 return bundle.LoadAsset<GameObject>(assetName);
         }
         return null;
