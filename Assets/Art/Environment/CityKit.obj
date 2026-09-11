@@ -1,4 +1,2 @@
-# Shotgun 3D City Kit - real mesh asset
+# Shotgun 3D City Kit - authored mesh asset
 mtllib CityKit.mtl
-# Large authored 3D city mesh: ground, roads, buildings, roofs, vehicles, trees
-v 0 0 0
