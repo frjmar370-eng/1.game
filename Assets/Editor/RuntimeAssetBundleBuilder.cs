@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 public static class RuntimeAssetBundleBuilder
@@ -75,7 +76,8 @@ public static class RuntimeAssetBundleBuilder
 
     static void ValidateBundle(string bundlePath)
     {
-        using (AssetBundle bundle = AssetBundle.LoadFromFile(bundlePath))
+        AssetBundle bundle = AssetBundle.LoadFromFile(bundlePath);
+        try
         {
             if (bundle == null)
                 throw new BuildFailedException("Runtime AssetBundle cannot be opened after build.");
@@ -90,6 +92,11 @@ public static class RuntimeAssetBundleBuilder
                 }
                 if (!found) throw new BuildFailedException("Runtime AssetBundle is missing prefab: " + required);
             }
+        }
+        finally
+        {
+            if (bundle != null)
+                bundle.Unload(true);
         }
     }
 
