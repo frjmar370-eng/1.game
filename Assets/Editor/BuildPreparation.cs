@@ -25,7 +25,7 @@ public static class BuildPreparation
         PlayerSettings.allowedAutorotateToLandscapeRight = true;
         PlayerSettings.allowedAutorotateToLandscapeLeft = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
-        PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel35;
+        PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)35;
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });
@@ -38,7 +38,7 @@ public static class BuildPreparation
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("SHOTGUN 3D: Android build settings prepared. Now use Shotgun 3D > FINAL BUILD > Build Android APK.");
+        Debug.Log("SHOTGUN 3D: Android build settings prepared. Use Shotgun 3D > FINAL BUILD > Build Android APK.");
     }
 
     [MenuItem("Shotgun 3D/FINAL PREPARE/Validate Project")]
