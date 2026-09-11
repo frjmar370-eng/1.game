@@ -5,16 +5,23 @@ using UnityEngine.EventSystems;
 public class SceneBootstrap : MonoBehaviour
 {
     bool gameStarted;
+    const string BUILD_STAMP = "BUILD 63422ec";
     void Awake(){Application.targetFrameRate=60;QualitySettings.vSyncCount=0;BuildStartScreen();}
     void BuildStartScreen(){
         GameObject canvasObj=new GameObject("Start Screen Canvas");Canvas canvas=canvasObj.AddComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;CanvasScaler scaler=canvasObj.AddComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1920,1080);canvasObj.AddComponent<GraphicRaycaster>();
         if(FindObjectOfType<EventSystem>()==null){GameObject es=new GameObject("EventSystem");es.AddComponent<EventSystem>();es.AddComponent<StandaloneInputModule>();}
         Image background=CreatePanel(canvas.transform,new Color(.018f,.024f,.035f,1));background.rectTransform.anchorMin=Vector2.zero;background.rectTransform.anchorMax=Vector2.one;background.rectTransform.offsetMin=Vector2.zero;background.rectTransform.offsetMax=Vector2.zero;
         Text title=CreateLabel(canvas.transform,"SHOTGUN 3D",new Vector2(.5f,.68f),82);title.fontStyle=FontStyle.Bold;Text subtitle=CreateLabel(canvas.transform,"TACTICAL COMBAT",new Vector2(.5f,.59f),30);subtitle.color=new Color(.72f,.78f,.86f);
-        Button play=CreateButton(canvas.transform,"PLAY",new Vector2(.5f,.42f),360,100);play.onClick.AddListener(StartGame);Text hint=CreateLabel(canvas.transform,"Third-person tactical arena",new Vector2(.5f,.27f),24);hint.color=new Color(.55f,.62f,.72f);
+        Button play=CreateButton(canvas.transform,"PLAY",new Vector2(.5f,.42f),360,100);play.onClick.AddListener(StartGame);Text hint=CreateLabel(canvas.transform,"Third-person tactical arena",new Vector2(.5f,.27f),24);hint.color=new Color(.55f,.62f,.72f);Text stamp=CreateLabel(canvas.transform,BUILD_STAMP,new Vector2(.5f,.12f),18);stamp.color=new Color(.35f,.42f,.50f);
     }
     void StartGame(){
-        if(gameStarted)return;gameStarted=true;GameObject menu=GameObject.Find("Start Screen Canvas");if(menu)Destroy(menu);BuildPlayer();BuildHUD();GameFlow flow=FindObjectOfType<GameFlow>();if(flow==null){GameObject flowObject=new GameObject("Game Flow");flow=flowObject.AddComponent<GameFlow>();}flow.BeginGame();
+        if(gameStarted)return;gameStarted=true;
+        GameObject menu=GameObject.Find("Start Screen Canvas");if(menu)Destroy(menu);
+        if(!RuntimeContentDownloader.Ready){GameObject loader=new GameObject("Runtime Content Downloader");RuntimeContentDownloader d=loader.AddComponent<RuntimeContentDownloader>();d.Begin(StartGameAfterContent);return;}
+        StartGameAfterContent();
+    }
+    void StartGameAfterContent(){
+        if(!this)return;BuildPlayer();BuildHUD();GameFlow flow=FindObjectOfType<GameFlow>();if(flow==null){GameObject flowObject=new GameObject("Game Flow");flow=flowObject.AddComponent<GameFlow>();}flow.BeginGame();
         Canvas hudCanvas=GameObject.Find("HUD Canvas")?.GetComponent<Canvas>();if(hudCanvas){if(MissionSystem.Instance)MissionSystem.Instance.Build(hudCanvas);if(ObjectiveSystem.Instance)ObjectiveSystem.Instance.Build(hudCanvas);}MobileHUD hud=FindObjectOfType<MobileHUD>();if(hud)hud.BindGameFlow(flow);
     }
     void BuildPlayer(){
