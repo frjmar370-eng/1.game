@@ -1,4 +1,0 @@
-# Shotgun 3D - authored architecture asset manifest
-# Primary authored geometry is CityKit.obj; this file marks the architecture layer.
-# Unity import target: Scale 1, no generated colliders; collision is assigned to the city root.
-mtllib City_Architecture.mtl
