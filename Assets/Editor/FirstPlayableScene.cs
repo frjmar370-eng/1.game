@@ -4,6 +4,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using System.IO;
 
 [InitializeOnLoad]
@@ -33,14 +34,21 @@ public static class FirstPlayableScene
 
         var cityPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Environment/CityKit.obj");
         var city=Object.Instantiate(cityPrefab); city.name="CITY_REAL_3D";
-        var mc=city.GetComponent<MeshCollider>() ?? city.AddComponent<MeshCollider>();
-        mc.convex=false;
+        var mc=city.GetComponent<MeshCollider>() ?? city.AddComponent<MeshCollider>(); mc.convex=false;
 
         var heroPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Characters/Hero.obj");
         var hero=Object.Instantiate(heroPrefab); hero.name="PLAYER_3D"; hero.transform.position=new Vector3(0,1f,-70); hero.transform.localScale=Vector3.one;
         var cc=hero.AddComponent<CharacterController>(); cc.height=3.8f; cc.radius=.55f; cc.center=new Vector3(0,1.9f,0); cc.stepOffset=.45f; cc.slopeLimit=48f;
+        hero.AddComponent<Health>();
         var controller=hero.AddComponent<ThirdPersonController>();
         var target=new GameObject("CameraTarget"); target.transform.SetParent(hero.transform); target.transform.localPosition=new Vector3(0,1.8f,0); controller.cameraTarget=target.transform;
+
+        var shotgunPrefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Weapons/Shotgun.obj");
+        if(shotgunPrefab){
+            var shotgun=Object.Instantiate(shotgunPrefab); shotgun.name="SHOTGUN_3D"; shotgun.transform.SetParent(hero.transform,false);
+            shotgun.transform.localPosition=new Vector3(.55f,1.55f,.45f); shotgun.transform.localRotation=Quaternion.Euler(0,90,0); shotgun.transform.localScale=Vector3.one;
+            var weapon=hero.AddComponent<WeaponController>(); weapon.playerCamera=null; weapon.muzzle=shotgun.transform;
+        }
 
         var camObj=new GameObject("Main Camera"); var cam=camObj.AddComponent<Camera>(); cam.tag="MainCamera"; cam.fieldOfView=62; cam.nearClipPlane=.1f; cam.farClipPlane=340; cam.allowHDR=true;
         var follow=camObj.AddComponent<ThirdPersonCamera>(); follow.target=hero.transform; camObj.transform.position=hero.transform.position+new Vector3(0,4,-7);
@@ -48,7 +56,7 @@ public static class FirstPlayableScene
         var light=new GameObject("Sun"); var dl=light.AddComponent<Light>(); dl.type=LightType.Directional; dl.intensity=1.25f; dl.shadows=LightShadows.Soft; dl.shadowStrength=.85f; light.transform.rotation=Quaternion.Euler(48,-32,0);
         CreateHUD();
         EditorSceneManager.SaveScene(scene,ScenePath); AssetDatabase.SaveAssets(); AssetDatabase.Refresh();
-        Debug.Log("SHOTGUN 3D: main playable city scene rebuilt.");
+        Debug.Log("SHOTGUN 3D: main playable city scene rebuilt with player, shotgun, health, camera and mobile HUD.");
         if(Application.isBatchMode) EditorApplication.Exit(0);
     }
 
