@@ -21,7 +21,7 @@ public class RuntimeContentDownloader : MonoBehaviour
     {
         PlayerPrefs.DeleteKey(ReadyKey);
         PlayerPrefs.Save();
-        try { if (File.Exists(RuntimeAssetBundleStore.LocalPath)) File.Delete(RuntimeAssetBundleStore.LocalPath); } catch { }
+        DeleteLocalFiles();
     }
 
     static string BuildId => BuildStamp.Version.Replace("BUILD ", "").Trim().ToLowerInvariant();
@@ -41,6 +41,13 @@ public class RuntimeContentDownloader : MonoBehaviour
         string path = RuntimeAssetBundleStore.LocalPath;
         string temp = path + ".part";
         Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+        // Android keeps app data when an APK is updated. Never reuse a bundle from another build.
+        if (PlayerPrefs.GetString(ReadyKey, "") != BuildStamp.Version)
+        {
+            RuntimeAssetBundleStore.Unload();
+            DeleteLocalFiles();
+        }
 
         if (RuntimeAssetBundleStore.LoadCached())
         {
@@ -82,7 +89,6 @@ public class RuntimeContentDownloader : MonoBehaviour
                     try { finalLength = new FileInfo(temp).Length; } catch { }
                     if (resume && req.responseCode == 200)
                     {
-                        // Server ignored Range; retry once without append so the file is not corrupted.
                         existing = 0;
                         try { File.Delete(temp); } catch { }
                         continue;
@@ -131,14 +137,14 @@ public class RuntimeContentDownloader : MonoBehaviour
             running = false;
             detail.text = "ملف المحتوى غير صالح";
             status.text = "أعد المحاولة لتنزيل نسخة سليمة.";
-            try { File.Delete(path); } catch { }
+            DeleteLocalFiles();
             yield break;
         }
 
         if (RuntimeAssetBundleStore.LoadPrefab("Player") == null || RuntimeAssetBundleStore.LoadPrefab("Enemy") == null || RuntimeAssetBundleStore.LoadPrefab("Shotgun") == null)
         {
             RuntimeAssetBundleStore.Unload();
-            try { File.Delete(path); } catch { }
+            DeleteLocalFiles();
             running = false;
             detail.text = "محتوى اللعبة غير مكتمل";
             status.text = "أعد المحاولة لتنزيل الحزمة الصحيحة.";
@@ -151,6 +157,12 @@ public class RuntimeContentDownloader : MonoBehaviour
         speed.text = "تم الحفظ على الجهاز";
         eta.text = "جاهز للتشغيل";
         Complete(finished);
+    }
+
+    static void DeleteLocalFiles()
+    {
+        try { if (File.Exists(RuntimeAssetBundleStore.LocalPath)) File.Delete(RuntimeAssetBundleStore.LocalPath); } catch { }
+        try { if (File.Exists(RuntimeAssetBundleStore.LocalPath + ".part")) File.Delete(RuntimeAssetBundleStore.LocalPath + ".part"); } catch { }
     }
 
     static float GetTotal(UnityWebRequest req, long existing)
