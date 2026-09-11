@@ -38,6 +38,8 @@ jobs:
           grep -q "RuntimeAssetBundleBuilder.Build" Assets/Editor/ShotgunAndroidBuild.cs
           grep -q "assetBundleManifestPath" Assets/Editor/ShotgunAndroidBuild.cs
           grep -q "AndroidTargetArchitectures: 2" ProjectSettings/ProjectSettings.asset
+          grep -q "ForceInternetPermission: 1" ProjectSettings/ProjectSettings.asset
+          grep -q "unitywebrequestassetbundle" Packages/manifest.json
 
       - name: Stamp APK with commit SHA
         shell: bash
@@ -114,13 +116,14 @@ jobs:
           test -s Builds/Shotgun3D.apk
           test -s Builds/Content/Android/shotgun3d-content
           test -s Builds/Content/Android.manifest
+          test ! -e Assets/Resources/RealPacks/Characters/Player.prefab
           size=$(stat -c%s Builds/Shotgun3D.apk)
           bundle_size=$(stat -c%s Builds/Content/Android/shotgun3d-content)
           test "$size" -gt 5000000
           test "$bundle_size" -gt 100000
           echo "APK_SIZE=$size"
           echo "CONTENT_BUNDLE_SIZE=$bundle_size"
-          ls -lh Builds/Shotgun3D.apk Builds/Content/Android/shotgun3d-content
+          ls -lh Builds/Shotgun3D.apk Builds/Content/Android/shotgun3d-content Builds/Content/Android.manifest
 
       - name: Publish runtime content release
         env:
@@ -136,7 +139,9 @@ jobs:
             --title "Shotgun 3D content ${GITHUB_SHA:0:12}" \
             --notes "Android runtime 3D content for build ${GITHUB_SHA}." \
             --latest=false
-          echo "CONTENT_RELEASE=$tag"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}/shotgun3d-content"
+          curl -fL --retry 3 --connect-timeout 20 --max-time 120 -o /dev/null "$url"
+          echo "CONTENT_URL=$url"
 
       - name: Upload APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
